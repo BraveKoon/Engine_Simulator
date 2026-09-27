@@ -34,6 +34,7 @@ let screen = 'select';
 let selected = ENGINES.find((e) => e.id === settings.engine) || ENGINES[0];
 let visTheta = 0;
 let lastCrank = 0;
+let outTheta = 0;
 
 // ───────── Selection screen ─────────
 function layoutIcon(e) {
@@ -244,6 +245,9 @@ function frame(now) {
     const dCrank = sim.crank - lastCrank;
     lastCrank = sim.crank;
     visTheta += dCrank * (settings.slow ? 0.06 : 1);
+    // gearbox output shaft follows the wheels
+    outTheta += (sim.v / 0.33) * sim.e.final * dt * (settings.slow ? 0.06 : 1);
+    sim.outTheta = outTheta;
 
     for (const ev of sim.events) {
       if (ev.type === 'warn') toast(ev.msg);

@@ -76,6 +76,61 @@ function hull(pts) {
   return lower.concat(upper);
 }
 
+// Spur gear lying in the YZ plane (axis = X), centred on the origin.
+// Tooth k points along dirAt(k * 360/N - 90) before any rotation.
+function gearGeometry(r, teeth, width, bore = 0) {
+  const m = (2 * r) / teeth;
+  const ra = r + m * 0.9;
+  const rd = r - m * 1.1;
+  const shape = new THREE.Shape();
+  const step = (Math.PI * 2) / teeth;
+  for (let k = 0; k < teeth; k++) {
+    const a = k * step;
+    const pts = [
+      [rd, a - step * 0.5],
+      [rd, a - step * 0.27],
+      [ra, a - step * 0.15],
+      [ra, a + step * 0.15],
+      [rd, a + step * 0.27],
+    ];
+    pts.forEach(([rr, aa], i) => {
+      const x = Math.cos(aa) * rr;
+      const y = Math.sin(aa) * rr;
+      if (k === 0 && i === 0) shape.moveTo(x, y);
+      else shape.lineTo(x, y);
+    });
+  }
+  shape.closePath();
+  if (bore > 0) {
+    const hole = new THREE.Path();
+    hole.absarc(0, 0, bore, 0, Math.PI * 2, true);
+    shape.holes.push(hole);
+  }
+  const g = new THREE.ExtrudeGeometry(shape, { depth: width, bevelEnabled: false, curveSegments: 4 });
+  g.translate(0, 0, -width / 2);
+  g.rotateY(Math.PI / 2);
+  return g;
+}
+
+// Phase offset (rad) for gear B driven by gear A so their teeth interleave.
+// psiA = direction from A's centre to the contact point (dirAt convention).
+// B's angle is then  -phiA * NA / NB + offset.
+function meshOffset(NA, psiA, NB) {
+  const psiB = psiA + Math.PI;
+  return Math.PI / 2 + psiB + (0.5 + ((Math.PI / 2 + psiA) * NA) / (Math.PI * 2)) * ((Math.PI * 2) / NB);
+}
+
+// Side of a bank the exhaust leaves from.
+function exhaustSide(bankAng, side) {
+  if (Math.abs(bankAng) <= 5) return new THREE.Vector3(0, 0, 1);
+  if (Math.abs(bankAng) >= 85) return new THREE.Vector3(0, -1, 0);
+  const o = side.clone();
+  if (o.z * Math.sign(bankAng) < 0) o.multiplyScalar(-1);
+  return o;
+}
+
+const BELT_PITCH = (Math.PI * 2 * 0.24) / 16; // crank sprocket r=0.24, 16 teeth
+
 /** Procedural animated engine model. */
 class EngineModel {
   constructor(spec, mats) {
@@ -123,8 +178,8 @@ class EngineModel {
     const journalGeo = new THREE.CylinderGeometry(0.2, 0.2, 1, 24);
     journalGeo.rotateZ(Math.PI / 2);
     const main = shadowed(new THREE.Mesh(journalGeo, mats.steel));
-    main.scale.x = xMax - xMin + 2.2;
-    main.position.x = (xMin + xMax) / 2;
+    main.scale.x = xMax - xMin + 2.6;
+    main.position.x = (xMin + xMax) / 2 - 0.2;
     crank.add(main);
 
     const cheekShape = new THREE.Shape();
@@ -167,13 +222,26 @@ class EngineModel {
     const pulleyGeo = new THREE.CylinderGeometry(0.42, 0.42, 0.22, 36);
     pulleyGeo.rotateZ(Math.PI / 2);
     const damper = shadowed(new THREE.Mesh(pulleyGeo, mats.black));
-    damper.position.x = front;
+    damper.position.x = front - 0.2;
     crank.add(damper);
-    const hubGeo = new THREE.CylinderGeometry(0.2, 0.2, 0.26, 20);
+    const hubGeo = new THREE.CylinderGeometry(0.2, 0.2, 0.3, 20);
     hubGeo.rotateZ(Math.PI / 2);
     const hub = new THREE.Mesh(hubGeo, mats.chrome);
-    hub.position.x = front - 0.03;
+    hub.position.x = front - 0.24;
     crank.add(hub);
+    // damper marks so its rotation is visible
+    for (let i = 0; i < 3; i++) {
+      const mk = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.12, 0.06), mats.chrome);
+      const a = (i / 3) * Math.PI * 2;
+      mk.position.set(front - 0.32, Math.cos(a) * 0.34, Math.sin(a) * 0.34);
+      mk.rotation.x = a;
+      crank.add(mk);
+    }
+    // toothed timing sprocket (drives the belt)
+    this.beltX = front + 0.08;
+    const crankSprocket = shadowed(new THREE.Mesh(gearGeometry(0.24, 16, 0.12), mats.steel));
+    crankSprocket.position.x = this.beltX;
+    crank.add(crankSprocket);
     const fwGeo = new THREE.CylinderGeometry(1.0, 1.0, 0.16, 48);
     fwGeo.rotateZ(Math.PI / 2);
     const flywheel = shadowed(new THREE.Mesh(fwGeo, mats.darkSteel));
@@ -192,20 +260,7 @@ class EngineModel {
       mark.rotation.x = a;
       crank.add(mark);
     }
-    // bellhousing / gearbox stub
-    const bell = shadowed(new THREE.Mesh(new THREE.CylinderGeometry(0.75, 1.15, 0.9, 40, 1, true), mats.alu));
-    bell.rotation.z = -Math.PI / 2;
-    bell.position.x = rear + 0.6;
-    bell.material = mats.alu.clone();
-    bell.material.side = THREE.DoubleSide;
-    this.root.add(bell);
-    const box = shadowed(new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.72, 1.5, 32), mats.alu));
-    box.rotation.z = -Math.PI / 2;
-    box.position.x = rear + 1.8;
-    this.root.add(box);
-    const lever = shadowed(new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.18, 0.5), mats.black));
-    lever.position.set(rear + 1.8, 0.7, 0);
-    this.root.add(lever);
+    this.buildGearbox(rear);
 
     // ---- Cylinders -------------------------------------------------------
     const pistonGeo = new THREE.CylinderGeometry(bore, bore, 0.46, 32);
@@ -357,7 +412,7 @@ class EngineModel {
         }
       }
       // Camshafts (intake / exhaust)
-      const camStart = front - (cx - 0.45);
+      const camStart = this.beltX - (cx - 0.45);
       const camEnd = bx1 + 0.1 - (cx - 0.45);
       const camGeo = new THREE.CylinderGeometry(0.06, 0.06, camEnd - camStart, 12);
       camGeo.rotateZ(Math.PI / 2);
@@ -366,7 +421,14 @@ class EngineModel {
       lobeGeo.rotateZ(Math.PI / 2);
       lobeGeo.scale(1, 1.55, 1);
       lobeGeo.translate(0, 0.05, 0);
+      const outSide = exhaustSide(bankAng, side);
+      const camGap = bore * 0.9;
+      const camGearR = camGap / 2;
+      const camGearN = Math.max(12, Math.round((Math.PI * 2 * camGearR) / BELT_PITCH / 0.8));
       for (const s of [-1, 1]) {
+        const isExhaust = side.clone().multiplyScalar(s).dot(outSide) > 0;
+        // intake cam is driven by the exhaust cam's gear: angle = -theta/2 + camOff
+        const camOff = isExhaust ? 0 : meshOffset(camGearN, s > 0 ? Math.PI / 2 : -Math.PI / 2, camGearN);
         const camG = new THREE.Group();
         camG.position.copy(d).multiplyScalar(this.deckDist + 0.72).addScaledVector(side, s * bore * 0.45);
         camG.position.x = cx - 0.45;
@@ -379,19 +441,31 @@ class EngineModel {
           const lobe = shadowed(new THREE.Mesh(lobeGeo, mats.steel));
           lobe.position.x = e.spec.x - (cx - 0.45);
           // lobe points at the valve at the middle of its opening event
-          const openMid = s > 0 ? 260 : 460; // cycle deg
-          lobe.rotation.x = -((e.spec.fire + openMid) / 2) * DEG;
+          // exhaust cam turns with the crank, intake cam is gear-driven the other way
+          const openMid = isExhaust ? 260 : 460; // cycle deg
+          lobe.rotation.x = (isExhaust ? -1 : 1) * ((e.spec.fire + openMid) / 2) * DEG - camOff;
           inner.add(lobe);
         }
-        // cam sprocket at front
-        const sp = shadowed(new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.36, 0.1, 30).rotateZ(Math.PI / 2), mats.black));
-        sp.position.x = front - (cx - 0.45);
-        inner.add(sp);
-        const spRing = new THREE.Mesh(new THREE.TorusGeometry(0.36, 0.035, 6, 30).rotateY(Math.PI / 2), mats.chrome);
-        spRing.position.x = sp.position.x - 0.03;
-        inner.add(spRing);
+        const localX = this.beltX - (cx - 0.45);
+        if (isExhaust) {
+          // 32-tooth sprocket: half crank speed
+          const sp = shadowed(new THREE.Mesh(gearGeometry(0.48, 32, 0.1, 0.07), mats.darkSteel));
+          sp.position.x = localX;
+          inner.add(sp);
+          for (let k = 0; k < 4; k++) {
+            const spoke = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.62, 0.07), mats.steel);
+            spoke.rotation.x = (k * Math.PI) / 4;
+            spoke.position.x = localX - 0.05;
+            inner.add(spoke);
+          }
+        }
+        // cam-to-cam drive gears
+        const cg = shadowed(new THREE.Mesh(gearGeometry(camGearR, camGearN, 0.09, 0.05), mats.steel));
+        cg.position.x = localX + 0.17;
+        inner.add(cg);
         this.root.add(camG);
-        this.cams.push({ inner, bankAng });
+        // contact direction from this cam toward its partner, in camG's frame
+        this.cams.push({ inner, isExhaust, camOff });
       }
       // Fuel rail accent along the bank
       const rail = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, len, 10).rotateZ(Math.PI / 2), mats.accent);
@@ -405,51 +479,216 @@ class EngineModel {
       coilBar.position.x = cx;
       this.root.add(coilBar);
 
-      this.banks.push({ list, d, side, bankAng, bx0, bx1, cx, width, q });
+      this.banks.push({ list, d, side, bankAng, bx0, bx1, cx, width, q, outSide });
     }
 
-    this.buildBelt(front);
+    this.buildBelt();
     this.buildExhaust();
     this.buildIntake();
     this.buildTurbos();
     this.buildStand(front, rear);
   }
 
-  buildBelt(front) {
+  buildBelt() {
     const { mats } = this;
+    const x = this.beltX;
     const pts = [];
-    const pulleys = [{ y: 0, z: 0, r: 0.44 }];
+    const pulleys = [{ y: 0, z: 0, r: 0.24 }];
     for (const b of this.banks) {
       for (const s of [-1, 1]) {
+        if (b.side.clone().multiplyScalar(s).dot(b.outSide) <= 0) continue; // exhaust cam only
         const p = new THREE.Vector3().copy(b.d).multiplyScalar(this.deckDist + 0.72).addScaledVector(b.side, s * this.bore * 0.45);
-        pulleys.push({ y: p.y, z: p.z, r: 0.38 });
+        pulleys.push({ y: p.y, z: p.z, r: 0.48 });
       }
     }
-    // idler / alternator
-    const alt = { y: -0.2, z: 1.3, r: 0.25 };
+    // alternator + tensioner
+    const alt = { y: -0.25, z: 1.25, r: 0.24 };
     if (this.spec.id === 'h6') {
-      alt.y = 1.2;
+      alt.y = 1.25;
       alt.z = 0;
     }
     pulleys.push(alt);
     for (const p of pulleys) {
-      for (let i = 0; i < 24; i++) {
-        const a = (i / 24) * Math.PI * 2;
-        pts.push([p.y + Math.cos(a) * p.r, p.z + Math.sin(a) * p.r]);
+      for (let i = 0; i < 32; i++) {
+        const a = (i / 32) * Math.PI * 2;
+        pts.push([p.y + Math.cos(a) * (p.r + 0.06), p.z + Math.sin(a) * (p.r + 0.06)]);
       }
     }
     const h = hull(pts);
-    const x = front;
-    const curvePts = h.map(([y, z]) => new THREE.Vector3(x, y, z));
-    const belt = tube(curvePts, 0.035, mats.rubber, true, 200);
+    const curve = new THREE.CatmullRomCurve3(h.map(([y, z]) => new THREE.Vector3(x, y, z)), true, 'catmullrom', 0.1);
+    const beltGeo = new THREE.TubeGeometry(curve, 400, 0.03, 6, true);
+    const belt = new THREE.Mesh(beltGeo, mats.rubber);
     this.root.add(belt);
+    // Belt teeth / printed marks move along the curve
+    this.beltCurve = curve;
+    this.beltLen = curve.getLength();
+    const n = Math.floor(this.beltLen / BELT_PITCH);
+    this.beltSpacing = this.beltLen / n;
+    const toothGeo = new THREE.BoxGeometry(0.16, 0.05, 0.045);
+    const toothMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.7, metalness: 0 });
+    const teeth = new THREE.InstancedMesh(toothGeo, toothMat, n);
+    const dark = new THREE.Color(0x26282b);
+    const mark = new THREE.Color(0xf2c94c);
+    for (let i = 0; i < n; i++) teeth.setColorAt(i, i % 8 === 0 ? mark : dark);
+    teeth.frustumCulled = false;
+    this.root.add(teeth);
+    this.beltTeeth = teeth;
+
     const altBody = shadowed(new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.55, 24).rotateZ(Math.PI / 2), mats.alu));
     altBody.position.set(x + 0.4, alt.y, alt.z);
     this.root.add(altBody);
-    const altPulley = shadowed(new THREE.Mesh(new THREE.CylinderGeometry(alt.r, alt.r, 0.12, 20).rotateZ(Math.PI / 2), mats.black));
+    const altPulley = shadowed(new THREE.Mesh(gearGeometry(alt.r, 16, 0.12, 0.05), mats.black));
     altPulley.position.set(x, alt.y, alt.z);
     this.root.add(altPulley);
-    this.spinners.push({ mesh: altPulley, ratio: 0.44 / alt.r });
+    this.spinners.push({ mesh: altPulley, ratio: 0.24 / alt.r });
+  }
+
+  buildGearbox(rear) {
+    const { mats } = this;
+    const C = 0.62; // shaft centre distance
+    const Ntot = 34;
+    const mod = (2 * C) / Ntot;
+    const R = (N) => (N * mod) / 2;
+    const gx0 = rear + 0.45;
+    const W = 0.13;
+    this.gb = { pairs: [], collars: [] };
+    const gb = this.gb;
+    const counterY = -C;
+
+    // clutch housing (open bell)
+    const bellMat = mats.liner;
+    const bell = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 1.15, 0.45, 40, 1, true), bellMat);
+    bell.rotation.z = -Math.PI / 2;
+    bell.position.x = rear + 0.22;
+    bell.renderOrder = 2;
+    this.root.add(bell);
+    // clutch disc spins with the input shaft
+    const disc = shadowed(new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.75, 0.06, 36).rotateZ(Math.PI / 2), mats.copper));
+    disc.position.x = rear + 0.14;
+    const input = new THREE.Group();
+    input.add(disc);
+    this.root.add(input);
+    gb.input = input;
+
+    const gears = this.spec.gears;
+    // head (constant-mesh) pair: input -> countershaft
+    const Nin = 13;
+    const Ncin = Ntot - Nin;
+    const head = { x: gx0 + 0.2, Nm: Nin, Nc: Ncin, head: true };
+    const list = [head];
+    const order = [6, 5, 4, 3, 2, 1];
+    order.forEach((g, i) => {
+      const want = (Nin / Ncin) * gears[g - 1]; // Nm/Nc
+      const Nc = Math.max(9, Math.round(Ntot / (1 + want)));
+      list.push({ g, x: gx0 + 0.55 + i * 0.3, Nm: Ntot - Nc, Nc });
+    });
+    const rev = { g: -1, x: gx0 + 0.55 + 6 * 0.3 + 0.1, Nm: 26, Nc: 11, reverse: true };
+    list.push(rev);
+    const gbEnd = rev.x + 0.35;
+    this.gbEnd = gbEnd;
+
+    const mainMat = mats.steel;
+    const selMat = new THREE.MeshStandardMaterial({ color: 0xff7a45, metalness: 0.6, roughness: 0.35 });
+    this.gb.selMat = selMat;
+    for (const p of list) {
+      const mg = shadowed(new THREE.Mesh(gearGeometry(R(p.Nm), p.Nm, W, 0.07), mainMat));
+      mg.position.x = p.x;
+      const cg = shadowed(new THREE.Mesh(gearGeometry(R(p.Nc), p.Nc, W, 0.06), mats.darkSteel));
+      cg.position.set(p.x, counterY, 0);
+      this.root.add(mg, cg);
+      p.main = mg;
+      p.counter = cg;
+      if (p.reverse) {
+        // idler sits beside the pair and reverses the direction
+        const Ni = 11;
+        const ri = R(Ni);
+        const rm = R(p.Nm);
+        const rc = R(p.Nc);
+        // place idler touching both gears, off to +z
+        const a = rc + ri;
+        const b2 = rm + ri;
+        const yI = (a * a - b2 * b2 + C * C) / (2 * C); // distance above counter
+        const zI = Math.sqrt(Math.max(0.01, a * a - yI * yI));
+        const idler = shadowed(new THREE.Mesh(gearGeometry(ri, Ni, W, 0.05), mats.steel));
+        idler.position.set(p.x, counterY + yI, zI);
+        this.root.add(idler);
+        p.idler = { mesh: idler, N: Ni, psiFromCounter: Math.atan2(zI, yI), psiToMain: Math.atan2(-zI, C - yI) };
+      }
+    }
+    gb.pairs = list;
+    gb.headRatio = Nin / Ncin;
+
+    // shafts
+    const shaft = (x0, x1, y, r, mat) => {
+      const m = shadowed(new THREE.Mesh(new THREE.CylinderGeometry(r, r, x1 - x0, 14).rotateZ(Math.PI / 2), mat));
+      m.position.set((x0 + x1) / 2, y, 0);
+      this.root.add(m);
+      return m;
+    };
+    shaft(rear + 0.1, gx0 + 0.3, 0, 0.065, mats.chrome); // input shaft
+    const outShaft = new THREE.Group();
+    this.root.add(outShaft);
+    const os = shadowed(new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, gbEnd + 0.6 - (gx0 + 0.35), 14).rotateZ(Math.PI / 2), mats.chrome));
+    os.position.x = (gx0 + 0.35 + gbEnd + 0.6) / 2;
+    outShaft.add(os);
+    // output flange
+    const flange = shadowed(new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.08, 6).rotateZ(Math.PI / 2), mats.darkSteel));
+    flange.position.x = gbEnd + 0.6;
+    outShaft.add(flange);
+    gb.output = outShaft;
+    shaft(gx0 + 0.1, gbEnd - 0.1, counterY, 0.06, mats.darkSteel);
+
+    // selector collars (dog clutches) on the output shaft
+    const collarDefs = [
+      { gears: [5, 6], a: list.find((p) => p.g === 6), b: list.find((p) => p.g === 5) },
+      { gears: [3, 4], a: list.find((p) => p.g === 4), b: list.find((p) => p.g === 3) },
+      { gears: [1, 2], a: list.find((p) => p.g === 2), b: list.find((p) => p.g === 1) },
+      { gears: [-1], a: list.find((p) => p.g === 1), b: rev },
+    ];
+    for (const c of collarDefs) {
+      const x = (c.a.x + c.b.x) / 2;
+      const g = new THREE.Group();
+      const ring = shadowed(new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.09, 24).rotateZ(Math.PI / 2), mats.alu));
+      const groove = new THREE.Mesh(new THREE.TorusGeometry(0.17, 0.02, 6, 24).rotateY(Math.PI / 2), mats.darkSteel);
+      g.add(ring, groove);
+      g.position.x = x;
+      outShaft.add(g);
+      // shift fork above the collar
+      const fork = shadowed(new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.45, 0.4), mats.alu));
+      fork.position.set(x, 0.33, 0);
+      this.root.add(fork);
+      gb.collars.push({ ...c, x, group: g, ring, fork, shift: 0 });
+    }
+    // fork rail
+    const rail = shadowed(new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, gbEnd - gx0, 10).rotateZ(Math.PI / 2), mats.chrome));
+    rail.position.set((gx0 + gbEnd) / 2, 0.58, 0);
+    this.root.add(rail);
+
+    // see-through case
+    const caseLen = gbEnd - gx0 + 0.1;
+    const caseGeo = new THREE.BoxGeometry(caseLen, 1.95, 1.2);
+    const gcase = new THREE.Mesh(caseGeo, mats.liner);
+    gcase.position.set(gx0 - 0.05 + caseLen / 2, -0.33, 0);
+    gcase.renderOrder = 2;
+    this.root.add(gcase);
+    const edges = new THREE.LineSegments(new THREE.EdgesGeometry(caseGeo), new THREE.LineBasicMaterial({ color: 0x8d9398, transparent: true, opacity: 0.6 }));
+    edges.position.copy(gcase.position);
+    this.root.add(edges);
+
+    // shift lever with a knob that follows the H pattern
+    const turret = shadowed(new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.2, 0.12, 20), mats.black));
+    const lx = gx0 + caseLen * 0.55;
+    turret.position.set(lx, 0.7, 0);
+    this.root.add(turret);
+    const lever = new THREE.Group();
+    lever.position.set(lx, 0.72, 0);
+    const stick = shadowed(new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.8, 10), mats.chrome));
+    stick.position.y = 0.4;
+    const knob = shadowed(new THREE.Mesh(new THREE.SphereGeometry(0.11, 20, 14), mats.black));
+    knob.position.y = 0.82;
+    lever.add(stick, knob);
+    this.root.add(lever);
+    gb.lever = lever;
   }
 
   buildExhaust() {
@@ -457,13 +696,7 @@ class EngineModel {
     this.collectors = [];
     for (const b of this.banks) {
       // exhaust exits on the outside of each bank (away from the V centre)
-      let outSide;
-      if (Math.abs(b.bankAng) <= 5) outSide = new THREE.Vector3(0, 0, 1);
-      else if (Math.abs(b.bankAng) >= 85) outSide = new THREE.Vector3(0, -1, 0);
-      else {
-        outSide = b.side.clone();
-        if (outSide.z * Math.sign(b.bankAng) < 0) outSide.multiplyScalar(-1);
-      }
+      const outSide = b.outSide;
       // exhaust valves are the ones on the outer side of the head
       for (const e of b.list) {
         const axis = e.dir.clone().multiplyScalar(this.deckDist);
@@ -567,7 +800,8 @@ class EngineModel {
     });
   }
 
-  buildStand(front, rear) {
+  buildStand(front, rearIn) {
+    const rear = Math.max(rearIn, (this.gbEnd || rearIn) - 0.4);
     const { mats } = this;
     this.root.updateMatrixWorld(true);
     const bb = new THREE.Box3().setFromObject(this.root);
@@ -596,6 +830,70 @@ class EngineModel {
     }
   }
 
+  updateBelt(theta) {
+    const t = this.beltTeeth;
+    if (!t) return;
+    const L = this.beltLen;
+    const shift = (((theta * 0.24) % L) + L) % L; // belt speed = crank sprocket surface speed
+    const m = new THREE.Matrix4();
+    const p = new THREE.Vector3();
+    const tan = new THREE.Vector3();
+    const out = new THREE.Vector3();
+    for (let i = 0; i < t.count; i++) {
+      const u = ((i * this.beltSpacing + shift) % L) / L;
+      this.beltCurve.getPointAt(u, p);
+      this.beltCurve.getTangentAt(u, tan);
+      out.set(0, tan.z, -tan.y).normalize();
+      tan.set(0, tan.y, tan.z).normalize();
+      p.addScaledVector(out, 0.025);
+      m.set(1, 0, 0, p.x, 0, out.y, tan.y, p.y, 0, out.z, tan.z, p.z, 0, 0, 0, 1);
+      t.setMatrixAt(i, m);
+    }
+    t.instanceMatrix.needsUpdate = true;
+  }
+
+  updateGearbox(theta, state) {
+    const gb = this.gb;
+    if (!gb) return;
+    gb.input.rotation.x = theta;
+    const head = gb.pairs[0];
+    head.main.rotation.x = theta;
+    const phiC = -theta * (head.Nm / head.Nc) + meshOffset(head.Nm, Math.PI, head.Nc);
+    for (const p of gb.pairs) {
+      p.counter.rotation.x = phiC;
+      if (p.head) continue;
+      if (p.reverse) {
+        const I = p.idler;
+        const phiI = -phiC * (p.Nc / I.N) + meshOffset(p.Nc, I.psiFromCounter, I.N);
+        I.mesh.rotation.x = phiI;
+        p.main.rotation.x = -phiI * (I.N / p.Nm) + meshOffset(I.N, I.psiToMain, p.Nm);
+      } else {
+        p.main.rotation.x = -phiC * (p.Nc / p.Nm) + meshOffset(p.Nc, 0, p.Nm);
+      }
+    }
+    gb.output.rotation.x = state.outTheta || 0;
+    const g = state.gear || 0;
+    for (const c of gb.collars) {
+      let target = 0;
+      if (c.gears.includes(g)) {
+        const pair = gb.pairs.find((p) => p.g === g);
+        target = Math.sign(pair.x - c.x) * 0.07;
+      }
+      c.shift += (target - c.shift) * 0.25;
+      c.group.position.x = c.x + c.shift;
+      c.fork.position.x = c.x + c.shift;
+      const on = c.gears.includes(g);
+      c.ring.material = on ? gb.selMat : this.mats.alu;
+    }
+    for (const p of gb.pairs) if (!p.head) p.main.material = p.g === g ? gb.selMat : this.mats.steel;
+    // H-pattern lever
+    const H = { '-1': [-1.5, -1], 1: [-0.5, -1], 2: [-0.5, 1], 3: [0.5, -1], 4: [0.5, 1], 5: [1.5, -1], 6: [1.5, 1] };
+    const [col, dir] = H[g] || [0, 0];
+    const lv = gb.lever;
+    lv.rotation.z += (-dir * 0.32 - lv.rotation.z) * 0.25;
+    lv.rotation.x += (col * 0.14 - lv.rotation.x) * 0.25;
+  }
+
   /** theta: crank angle (rad, accumulated). */
   update(theta, rpm, state) {
     const thDeg = theta / DEG;
@@ -605,8 +903,10 @@ class EngineModel {
     const tmpWrist = new THREE.Vector3();
     const firing = state.running && !state.limiter;
     const load = state.load;
-    // cams run at half crank speed
-    for (const c of this.cams) c.inner.rotation.x = theta / 2;
+    // cams run at half crank speed; the intake cam is turned the other way by the cam gears
+    for (const c of this.cams) c.inner.rotation.x = c.isExhaust ? theta / 2 : -theta / 2 + c.camOff;
+    this.updateBelt(theta);
+    this.updateGearbox(theta, state);
     for (const s of this.spinners) {
       if (s.turbo) s.mesh.rotation.x += (state.boost * 0.9 + 0.02 * (rpm / 6000)) * 1.1;
       else s.mesh.rotation.x = theta * s.ratio;
@@ -744,7 +1044,6 @@ export class EngineView {
     this.renderer.setSize(w, h, false);
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
-    this.fitDistance();
   }
 
   setEngine(spec) {
@@ -760,7 +1059,8 @@ export class EngineView {
     this.model.root.updateMatrixWorld(true);
     const box = new THREE.Box3().setFromObject(this.model.root);
     const sphere = box.getBoundingSphere(new THREE.Sphere());
-    this.center = sphere.center.clone();
+    this.center = box.getCenter(new THREE.Vector3());
+    this.bbox = box;
     this.radius = sphere.radius;
     this.controls.target.copy(this.center);
     this.controls.minDistance = this.radius * 0.6;
@@ -768,19 +1068,34 @@ export class EngineView {
     this.setView(this.viewIndex, true);
   }
 
-  fitDistance() {
-    if (!this.radius) return 12;
-    const vfov = (this.camera.fov * Math.PI) / 180;
-    const hfov = 2 * Math.atan(Math.tan(vfov / 2) * this.camera.aspect);
-    const fov = Math.min(vfov, hfov);
-    return (this.radius / Math.sin(fov / 2)) * 0.78;
+  // Distance along dir at which the model's bounding box fills ~88% of the view.
+  fitDistance(dir) {
+    if (!this.radius || !dir) return this.radius ? this.radius * 2.5 : 12;
+    const cam = this.camera.clone();
+    const b = this.bbox;
+    const corners = [];
+    for (const x of [b.min.x, b.max.x]) for (const y of [b.min.y, b.max.y]) for (const z of [b.min.z, b.max.z]) corners.push(new THREE.Vector3(x, y, z));
+    let d = this.radius * 2.5;
+    const v = new THREE.Vector3();
+    for (let it = 0; it < 6; it++) {
+      cam.position.copy(this.center).addScaledVector(dir, d);
+      cam.lookAt(this.center);
+      cam.updateMatrixWorld(true);
+      let m = 0;
+      for (const c of corners) {
+        v.copy(c).project(cam);
+        m = Math.max(m, Math.abs(v.x), Math.abs(v.y));
+      }
+      d *= Math.max(0.5, Math.min(2, m / 0.88));
+    }
+    return d;
   }
 
   setView(i, instant = false) {
     this.viewIndex = ((i % VIEWS.length) + VIEWS.length) % VIEWS.length;
     const v = VIEWS[this.viewIndex];
     const dir = new THREE.Vector3(...v.dir).normalize();
-    const to = this.center.clone().addScaledVector(dir, this.fitDistance());
+    const to = this.center.clone().addScaledVector(dir, this.fitDistance(dir));
     if (instant) {
       this.camera.position.copy(to);
       this.controls.target.copy(this.center);
