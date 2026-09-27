@@ -39,6 +39,9 @@ npm run build    # dist/ 에 정적 파일 생성
 npm run preview
 ```
 
+`v*` 태그를 푸시하면 `.github/workflows/release.yml` 이 GitHub 릴리스를 만들고, 한 파일짜리 `engine-simulator.html` 과 빌드 zip 을 첨부합니다
+(`npm run build && npm run standalone` 으로 로컬에서도 만들 수 있습니다).
+
 `main` 브랜치에 푸시하면 `.github/workflows/deploy.yml` 이 GitHub Pages 로 배포합니다
 (저장소 Settings → Pages → Source 를 **GitHub Actions** 로 설정).
 

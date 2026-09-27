@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite --host",
     "build": "vite build",
-    "preview": "vite preview --host"
+    "preview": "vite preview --host",
+    "standalone": "node scripts/standalone.mjs"
   },
   "dependencies": {
     "three": "^0.186.1"
