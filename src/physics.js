@@ -3,7 +3,7 @@ import { torqueCurve } from './engines.js';
 const TAU = Math.PI * 2;
 const RPM = 60 / TAU; // rad/s -> rpm
 const G = 9.81;
-const WHEEL_R = 0.33;
+const DEFAULT_WHEEL_R = 0.33;
 const DRIVELINE_EFF = 0.9;
 
 export const GEAR_LABEL = { '-1': 'R', 0: 'N', 1: '1', 2: '2', 3: '3', 4: '4', 5: '5', 6: '6' };
@@ -13,8 +13,16 @@ export const GEAR_LABEL = { '-1': 'R', 0: 'N', 1: '1', 2: '2', 3: '3', 4: '4', 5
  * Fixed-step integration (call update(dt) with frame time; it substeps).
  */
 export class Simulator {
-  constructor(engine) {
+  /**
+   * @param engine engine spec from engines.js
+   * @param car optional vehicle overrides { mass, wheelR, cda, final }
+   */
+  constructor(engine, car = {}) {
     this.e = engine;
+    this.mass = car.mass ?? engine.mass;
+    this.wheelR = car.wheelR ?? DEFAULT_WHEEL_R;
+    this.cda = car.cda ?? 0.68;
+    this.final = car.final ?? engine.final;
     this.reset();
   }
 
@@ -91,8 +99,8 @@ export class Simulator {
 
   ratio(g = this.gear) {
     if (g === 0) return 0;
-    if (g === -1) return -3.3 * this.e.final;
-    return this.e.gears[g - 1] * this.e.final;
+    if (g === -1) return -3.3 * this.final;
+    return this.e.gears[g - 1] * this.final;
   }
 
   update(dt) {
@@ -173,7 +181,7 @@ export class Simulator {
 
     const Te = this.engineTorque(dt);
     const Je = e.inertia;
-    const m = e.mass;
+    const m = this.mass;
     const ratio = this.ratio();
 
     // Automatic clutch
@@ -190,7 +198,7 @@ export class Simulator {
         // slip controller: pass the engine's torque through while holding it near the bite rpm
         const maxCap = e.maxTorque * 1.8;
         const launch = Math.max(0, Math.min(1, (Te + (e.maxTorque / 600) * (rpm - bite)) / maxCap));
-        const synced = Math.abs(this.omega - (this.v / WHEEL_R) * ratio) < 40 && rpm > e.idle * 1.05;
+        const synced = Math.abs(this.omega - (this.v / this.wheelR) * ratio) < 40 && rpm > e.idle * 1.05;
         clutchTarget = synced ? 1 : this.throttle > 0.02 ? launch : 0;
         if (Math.abs(this.v) > 3) clutchTarget = Math.max(clutchTarget, 0.8 * smooth((this.rpm - e.idle * 0.9) / 400));
         // anti-stall: let the engine recover when it is being dragged down
@@ -202,7 +210,7 @@ export class Simulator {
 
     // Road loads
     const rolling = 0.013 * m * G;
-    const aero = 0.5 * 1.2 * 0.68 * this.v * this.v;
+    const aero = 0.5 * 1.2 * this.cda * this.v * this.v;
     const Fres = Math.abs(this.v) > 0.01 ? Math.sign(this.v) * (rolling + aero) : 0;
     const Fbrake = this.brake * 1.05 * m * G;
 
@@ -213,7 +221,7 @@ export class Simulator {
     }
 
     if (this.gear !== 0 && this.locked) {
-      const k = ratio / WHEEL_R;
+      const k = ratio / this.wheelR;
       const meff = m + Je * k * k;
       const Fdrive = Te * k * DRIVELINE_EFF;
       const a = this.vehicleAccel(Fdrive - Fres, Fbrake, meff, dt);
@@ -226,7 +234,7 @@ export class Simulator {
     } else {
       let Tc = 0;
       if (this.gear !== 0 && cap > 0) {
-        const k = ratio / WHEEL_R;
+        const k = ratio / this.wheelR;
         const slip = this.omega - this.v * k;
         // Damped clutch torque that cannot overshoot the slip in one step.
         const meffInv = 1 / Je + (k * k) / m;

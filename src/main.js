@@ -5,6 +5,9 @@ import { EngineView } from './engine3d.js';
 import { EngineAudio } from './audio.js';
 import { Tachometer } from './ui/gauge.js';
 import { Pedal, HShifter } from './ui/controls.js';
+import { CHASSIS, WHEELS, PAINT_SWATCHES, buildCar, tyreFor } from './car/catalog.js';
+import { CarModel } from './car/car3d.js';
+import { wheelImage } from './car/wheelArt.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -30,7 +33,12 @@ audio.volume = settings.volume;
 audio.muted = settings.mute;
 const tacho = new Tachometer($('tacho'));
 let sim = null;
-let screen = 'select';
+let screen = 'home';
+let mode = 'engine'; // 'engine' = plain simulator, 'build' = car builder
+const build = { chassis: 'mono', inch: 18 };
+let car = null; // finished car from the builder
+let wheelAngle = 0;
+let showCar = false; // simulator viewport: car or engine
 let selected = ENGINES.find((e) => e.id === settings.engine) || ENGINES[0];
 let visTheta = 0;
 let lastCrank = 0;
@@ -81,7 +89,165 @@ function selectEngine(e) {
   view.setEngine(e);
 }
 
-$('goBtn').addEventListener('click', () => startSim());
+// ───────── Screen switching ─────────
+const SCREENS = ['home', 'select', 'chassis', 'wheel', 'result', 'sim'];
+function show(id) {
+  screen = id;
+  for (const s of SCREENS) $(s).classList.toggle('active', s === id);
+}
+
+$('modeEngine').addEventListener('click', () => openSelect('engine'));
+$('modeBuild').addEventListener('click', () => openSelect('build'));
+$('selBack').addEventListener('click', () => show('home'));
+for (const b of document.querySelectorAll('[data-back]')) {
+  b.addEventListener('click', () => {
+    const to = b.dataset.back;
+    if (to === 'select') openSelect(mode, false);
+    else show(to);
+  });
+}
+
+function openSelect(m, reset = true) {
+  mode = m;
+  const b = m === 'build';
+  $('selStep').hidden = !b;
+  $('selTitle').textContent = b ? '엔진을 고르세요' : '엔진 시뮬레이터';
+  $('selSub').textContent = b ? '차에 얹을 엔진부터 골라요' : '엔진을 고르고 시동을 걸어 보세요';
+  $('goBtn').textContent = b ? '다음: 차체 고르기' : '이 엔진으로 시작하기';
+  show('select');
+  view.mount($('preview'));
+  view.controls.autoRotate = true;
+  if (reset || !(view.model && view.model.spec === selected)) view.setEngine(selected);
+  view.setView(0, true);
+}
+
+$('goBtn').addEventListener('click', () => {
+  if (mode === 'build') openChassis();
+  else startSim();
+});
+
+// ───────── Car builder: chassis ─────────
+const CHASSIS_ART = {
+  mono: `<svg viewBox="0 0 320 120"><path d="M30 86 L42 64 L96 58 L128 34 L214 32 L250 58 L292 66 L296 86 Z" fill="rgba(234,219,194,0.16)" stroke="#eadbc2" stroke-width="3" stroke-linejoin="round"/><path d="M96 58 L250 58 M128 34 L118 86 M170 33 L170 86 M214 32 L226 86 M42 70 L292 72" stroke="#eadbc2" stroke-width="2" opacity="0.55"/><circle cx="78" cy="88" r="17" fill="#171b19" stroke="#9ea7a1" stroke-width="5"/><circle cx="248" cy="88" r="17" fill="#171b19" stroke="#9ea7a1" stroke-width="5"/><text x="160" y="112" fill="#9ea7a1" font-size="11" text-anchor="middle" font-family="sans-serif">차체 = 뼈대 (한 덩어리)</text></svg>`,
+  frame: `<svg viewBox="0 0 320 120"><path d="M34 70 L40 44 L100 40 L118 18 L208 18 L220 40 L290 44 L294 70 Z" fill="none" stroke="#9ea7a1" stroke-width="2.5" stroke-dasharray="5 4" stroke-linejoin="round"/><rect x="26" y="78" width="276" height="9" rx="2" fill="#eadbc2"/><path d="M48 76 v12 M96 76 v12 M146 76 v12 M196 76 v12 M246 76 v12 M286 76 v12" stroke="#1f2522" stroke-width="3"/><circle cx="76" cy="90" r="19" fill="#171b19" stroke="#9ea7a1" stroke-width="5"/><circle cx="250" cy="90" r="19" fill="#171b19" stroke="#9ea7a1" stroke-width="5"/><text x="160" y="114" fill="#9ea7a1" font-size="11" text-anchor="middle" font-family="sans-serif">사다리 프레임 위에 차체를 얹음</text></svg>`,
+};
+
+function openChassis() {
+  $('chassisSub').textContent = `엔진: ${selected.name}`;
+  const list = $('chassisList');
+  list.innerHTML = '';
+  for (const c of CHASSIS) {
+    const b = document.createElement('button');
+    b.className = 'chassis-card';
+    b.dataset.id = c.id;
+    b.innerHTML = `${CHASSIS_ART[c.id]}
+      <h3>${c.name}<small>${c.en}</small></h3>
+      <p>${c.desc}</p>
+      <div class="pc"><div class="pro"><b>장점</b><ul>${c.pros.map((x) => `<li>${x}</li>`).join('')}</ul></div>
+      <div class="con"><b>단점</b><ul>${c.cons.map((x) => `<li>${x}</li>`).join('')}</ul></div></div>
+      <div class="ex">예: <em>${c.examples.join(' · ')}</em></div>`;
+    b.addEventListener('click', () => {
+      build.chassis = c.id;
+      markSelected(list, c.id);
+    });
+    list.appendChild(b);
+  }
+  markSelected(list, build.chassis);
+  show('chassis');
+}
+
+function markSelected(list, id) {
+  for (const el of list.children) {
+    const on = el.dataset.id === String(id);
+    el.classList.toggle('selected', on);
+    el.setAttribute('aria-selected', String(on));
+  }
+}
+
+$('chassisNext').addEventListener('click', () => openWheels());
+
+// ───────── Car builder: wheels ─────────
+function openWheels() {
+  const ch = CHASSIS.find((c) => c.id === build.chassis);
+  $('wheelSub').textContent = `${selected.code} 엔진 · ${ch.name}`;
+  const list = $('wheelList');
+  list.innerHTML = '';
+  WHEELS.forEach((w, i) => {
+    const tyre = tyreFor(build.chassis, w.inch);
+    const b = document.createElement('button');
+    b.className = 'wheel-card';
+    b.dataset.id = String(w.inch);
+    b.setAttribute('role', 'option');
+    b.innerHTML = `<div class="wheel-img"><img alt="${w.inch}인치 휠" /></div>
+      <div class="w-inch">${w.inch}인치<small>${tyre.label}</small></div>
+      <ul>${w.cars.map((c) => `<li>${c}</li>`).join('')}</ul>`;
+    b.addEventListener('click', () => {
+      build.inch = w.inch;
+      markSelected(list, w.inch);
+    });
+    list.appendChild(b);
+    // draw each wheel image a moment apart so they load in one by one
+    const box = b.querySelector('.wheel-img');
+    const img = box.querySelector('img');
+    setTimeout(() => {
+      img.onload = () => box.classList.add('loaded');
+      img.src = wheelImage({ design: w.design, inch: w.inch, tyre: { ...tyre }, dark: w.inch >= 22 }, 280);
+    }, 120 + i * 110);
+  });
+  markSelected(list, build.inch);
+  show('wheel');
+}
+
+$('buildBtn').addEventListener('click', () => makeCar());
+
+// ───────── Car builder: result ─────────
+let carModel = null;
+function makeCar() {
+  car = buildCar(selected, build.chassis, build.inch);
+  show('result');
+  view.mount($('carStage'));
+  view.controls.autoRotate = true;
+  carModel = new CarModel(car);
+  view.setModel(carModel);
+  view.setView(0, true);
+  $('carType').textContent = car.typeName;
+  $('carName').textContent = car.name;
+  $('carSub').textContent = `${car.chassisName} · ${car.inch}인치 휠 · ${car.drive}`;
+  const e = car.engine;
+  const p = car.perf;
+  const rows = [
+    ['0→100 km/h', p.t100 ? `${p.t100.toFixed(1)}초` : '—', true],
+    ['최고속도', `${p.vmax} km/h`, true],
+    ['최고출력', `${car.power.ps}마력`, true],
+    ['엔진', `${e.displacement.toFixed(1)}L ${e.code}`],
+    ['최대토크', `${e.maxTorque} Nm`],
+    ['공차중량', `${car.mass.toLocaleString('en-US')} kg`],
+    ['마력/톤', `${p.psPerTon} ps/t`],
+    ['타이어', car.tyre.label],
+    ['지상고', `${Math.round(car.clearance * 1000)} mm`],
+  ];
+  $('carSpecs').innerHTML = rows.map(([k, v, big]) => `<div><dt>${k}</dt><dd${big ? ' class="big"' : ''}>${v}</dd></div>`).join('');
+  const sw = $('swatches');
+  sw.innerHTML = '';
+  for (const hex of [car.paint, ...PAINT_SWATCHES.filter((h) => h !== car.paint)].slice(0, 7)) {
+    const b = document.createElement('button');
+    b.style.background = hex;
+    b.setAttribute('aria-label', `색상 ${hex}`);
+    b.classList.toggle('on', hex === car.paint);
+    b.addEventListener('click', () => {
+      car.paint = hex;
+      carModel.setPaint(hex);
+      for (const x of sw.children) x.classList.toggle('on', x === b);
+    });
+    sw.appendChild(b);
+  }
+}
+
+$('restartBtn').addEventListener('click', () => {
+  car = null;
+  show('home');
+});
+$('driveBtn').addEventListener('click', () => startSim(car));
 
 // ───────── Simulator screen ─────────
 const GEAR_NAME = { '-1': '후진', 0: '중립' };
@@ -91,42 +257,68 @@ const shifter = new HShifter($('shifter'), (g) => (sim ? sim.setGear(g) : false)
 const brake = new Pedal($('brakePedal'), (v) => sim && (sim.brakeIn = v));
 const accel = new Pedal($('accelPedal'), (v) => sim && (sim.throttleIn = v));
 
-async function startSim() {
-  const e = selected;
-  sim = new Simulator(e);
-  screen = 'sim';
-  $('select').classList.remove('active');
-  $('sim').classList.add('active');
+async function startSim(withCar = null) {
+  const e = withCar ? withCar.engine : selected;
+  sim = new Simulator(e, withCar || {});
+  car = withCar;
+  show('sim');
   view.mount($('viewport'));
   view.controls.autoRotate = settings.autoRotate;
-  $('viewBtn').textContent = view.setView(0, true);
+  showCar = false;
+  $('modelToggle').hidden = !withCar;
+  $('backLabel').textContent = withCar ? '차량' : '엔진 선택';
+  setSimModel();
+  wheelAngle = 0;
   tacho.configure(e.redline);
   shifter.reset();
   $('engName').textContent = e.name.replace(/\s/g, ' ');
-  $('engSub').textContent = `${e.displacement.toFixed(1)}L · ${specLine(e).p.ps}마력 · 6단 수동`;
+  $('engName').textContent = withCar ? withCar.name : e.name;
+  $('engSub').textContent = withCar
+    ? `${withCar.typeName} · ${withCar.mass.toLocaleString('en-US')}kg · ${withCar.tyre.label}`
+    : `${e.displacement.toFixed(1)}L · ${specLine(e).p.ps}마력 · 6단 수동`;
   lastCrank = 0;
   // Audio must be unlocked from a user gesture.
   audio.init().then(() => audio.setEngine(e));
   audio.setEngine(e);
 }
 
+function setSimModel() {
+  if (showCar && car) {
+    carModel = new CarModel(car);
+    view.setModel(carModel);
+  } else {
+    view.setEngine(sim.e);
+  }
+  $('modelToggle').textContent = showCar ? '엔진 보기' : '차량 보기';
+  $('viewBtn').textContent = view.setView(0, true);
+}
+$('modelToggle').addEventListener('click', () => {
+  showCar = !showCar;
+  setSimModel();
+});
+
 function backToSelect() {
   if (sim) sim.stop();
   sim = null;
   audio.silence();
-  screen = 'select';
   exitFullscreen();
-  $('sim').classList.remove('active');
-  $('select').classList.add('active');
-  view.mount($('preview'));
-  view.controls.autoRotate = true;
-  view.setView(0, true);
+  if (car) {
+    // back to the finished car
+    show('result');
+    view.mount($('carStage'));
+    view.controls.autoRotate = true;
+    carModel = new CarModel(car);
+    view.setModel(carModel);
+    view.setView(0, true);
+  } else {
+    openSelect(mode, true);
+  }
 }
 
 $('backBtn').addEventListener('click', backToSelect);
 $('powerBtn').addEventListener('click', async () => {
   await audio.init();
-  audio.setEngine(selected);
+  if (sim) audio.setEngine(sim.e);
   sim?.toggleEngine();
 });
 $('viewBtn').addEventListener('click', () => {
@@ -246,8 +438,11 @@ function frame(now) {
     lastCrank = sim.crank;
     visTheta += dCrank * (settings.slow ? 0.06 : 1);
     // gearbox output shaft follows the wheels
-    outTheta += (sim.v / 0.33) * sim.e.final * dt * (settings.slow ? 0.06 : 1);
+    const slowK = settings.slow ? 0.06 : 1;
+    outTheta += (sim.v / sim.wheelR) * sim.final * dt * slowK;
     sim.outTheta = outTheta;
+    wheelAngle += (sim.v / sim.wheelR) * dt * slowK;
+    sim.wheelAngle = wheelAngle;
 
     for (const ev of sim.events) {
       if (ev.type === 'warn') toast(ev.msg);
@@ -267,10 +462,11 @@ function frame(now) {
       uiT = 0;
       updateInfo();
     }
-  } else {
-    // idle turning preview on the selection screen
+  } else if (screen !== 'home') {
+    // idle turning preview on the selection / result screens
     visTheta += dt * 2.2;
-    view.render(dt, visTheta, 20, { running: false, load: 0, boost: 0, limiter: false });
+    wheelAngle += dt * 0.8;
+    view.render(dt, visTheta, 20, { running: false, load: 0, boost: 0, limiter: false, wheelAngle });
   }
   requestAnimationFrame(frame);
 }
@@ -307,6 +503,7 @@ buildList();
 view.mount($('preview'));
 view.controls.autoRotate = true;
 selectEngine(selected);
+show('home');
 setSlow(settings.slow);
 setUnit(settings.unit);
 requestAnimationFrame(frame);

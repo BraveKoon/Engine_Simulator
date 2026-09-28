@@ -1047,11 +1047,16 @@ export class EngineView {
   }
 
   setEngine(spec) {
+    this.setModel(new EngineModel(spec, this.mats));
+  }
+
+  /** Show any model exposing { root, floor, update(theta, rpm, state), dispose() }. */
+  setModel(model) {
     if (this.model) {
       this.scene.remove(this.model.root);
       this.model.dispose();
     }
-    this.model = new EngineModel(spec, this.mats);
+    this.model = model;
     this.model.update(0, 0, { running: false, load: 0, boost: 0 });
     this.scene.add(this.model.root);
     this.model.root.position.y = -this.model.floor;
@@ -1092,8 +1097,9 @@ export class EngineView {
   }
 
   setView(i, instant = false) {
-    this.viewIndex = ((i % VIEWS.length) + VIEWS.length) % VIEWS.length;
-    const v = VIEWS[this.viewIndex];
+    const views = this.model?.views || VIEWS;
+    this.viewIndex = ((i % views.length) + views.length) % views.length;
+    const v = views[this.viewIndex];
     const dir = new THREE.Vector3(...v.dir).normalize();
     const to = this.center.clone().addScaledVector(dir, this.fitDistance(dir));
     if (instant) {
@@ -1112,7 +1118,7 @@ export class EngineView {
   }
 
   get viewName() {
-    return VIEWS[this.viewIndex].name;
+    return (this.model?.views || VIEWS)[this.viewIndex].name;
   }
 
   render(dt, theta, rpm, state) {
