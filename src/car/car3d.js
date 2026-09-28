@@ -29,6 +29,12 @@ const PROFILES = {
     wind: 3,
     rear: 5,
   },
+  fastback: {
+    top: [[0.5, 0.3], [0.5, 0.5], [0.44, 0.62], [0.2, 0.76], [0.02, 1.22], [-0.12, 1.3], [-0.3, 1.14], [-0.46, 0.86], [-0.5, 0.72], [-0.5, 0.3]],
+    glass: [[0.18, 0.84], [0.02, 1.18], [-0.11, 1.25], [-0.27, 1.1], [-0.3, 0.98]],
+    wind: 3,
+    rear: 5,
+  },
   suv: {
     top: [[0.5, 0.4], [0.5, 0.76], [0.46, 0.95], [0.3, 1.05], [0.15, 1.62], [-0.4, 1.72], [-0.49, 1.62], [-0.5, 1.1], [-0.5, 0.4]],
     glass: [[0.28, 1.13], [0.147, 1.57], [-0.39, 1.66], [-0.47, 1.58], [-0.48, 1.14]],
@@ -94,8 +100,10 @@ export class CarModel {
     const glass = this.mat(new THREE.MeshPhysicalMaterial({ color: 0x1b2530, metalness: 0.2, roughness: 0.05, transparent: true, opacity: 0.88 }));
 
     // ---- body shell from the side silhouette -----------------------------
-    const pts = P.top.map(([x, y]) => [x * L, y + lift]);
-    const glassPts = P.glass.map(([x, y]) => [x * L, y + lift]);
+    // scale the silhouette to the real car's height
+    const sy = b.H ? b.H / Math.max(...P.top.map((p) => p[1])) : 1;
+    const pts = P.top.map(([x, y]) => [x * L, y * sy + lift]);
+    const glassPts = P.glass.map(([x, y]) => [x * L, y * sy + lift]);
     const belt = Math.min(...glassPts.map((p) => p[1])) - 0.03;
     // smooth the upper outline (keeps the bumper corners)
     const curve = new THREE.CatmullRomCurve3(pts.slice(1, -1).map(([x, y]) => new THREE.Vector3(x, y, 0)), false, 'centripetal');
@@ -210,12 +218,12 @@ export class CarModel {
       hl.position.set(front + 0.045, headY, s * (W / 2 - 0.3));
       this.body.add(hl);
       const tl = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.42), tailMat);
-      tl.position.set(rear - 0.04, (car.type === 'pickup' ? 1.05 : pts[pts.length - 2][1] - 0.12) + (car.type === 'pickup' ? lift : 0), s * (W / 2 - 0.28));
+      tl.position.set(rear - 0.04, car.type === 'pickup' ? 1.05 * sy + lift : pts[pts.length - 2][1] - 0.12, s * (W / 2 - 0.28));
       this.body.add(tl);
       // mirror
-      const mirrorAt = P.glass[0];
+      const mirrorAt = glassPts[0];
       const mir = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.1, 0.18), paint);
-      mir.position.set(mirrorAt[0] * L - 0.05, mirrorAt[1] + lift + 0.02, s * (W / 2 + 0.08));
+      mir.position.set(mirrorAt[0] - 0.05, mirrorAt[1] + 0.02, s * (W / 2 + 0.08));
       mir.castShadow = true;
       this.body.add(mir);
     }
@@ -269,12 +277,12 @@ export class CarModel {
       this.body.add(rack);
       const spare = this.makeWheel();
       spare.group.rotation.y = -Math.PI / 2;
-      spare.group.position.set(rear - car.tyre.widthM / 2 - 0.03, 1.1 + lift, 0);
+      spare.group.position.set(rear - car.tyre.widthM / 2 - 0.03, 1.1 * sy + lift, 0);
       this.body.add(spare.group);
     }
     if (car.type === 'pickup') {
       const bed = new THREE.Mesh(new THREE.BoxGeometry(L * 0.33, 0.05, W - 0.3), trim);
-      bed.position.set(-L * 0.33, 1.2 + lift, 0);
+      bed.position.set(-L * 0.33, 1.22 * sy + lift, 0);
       this.body.add(bed);
     }
 

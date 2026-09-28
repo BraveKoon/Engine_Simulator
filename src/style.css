@@ -1364,3 +1364,50 @@ kbd {
     grid-template-columns: 1fr 1fr;
   }
 }
+
+/* ───────── Real-car matching ───────── */
+.chassis-card:disabled,
+.wheel-card:disabled {
+  opacity: 0.35;
+  filter: grayscale(1);
+  cursor: not-allowed;
+}
+
+.ex.none,
+.wheel-card .none {
+  margin: 0;
+  font-size: 12.5px;
+  color: #ff9a80;
+}
+
+.alts {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.alts button {
+  flex: 0 0 auto;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: var(--panel-2);
+  border: 1.5px solid var(--line);
+  font-size: 13px;
+  color: #dfe3df;
+  white-space: nowrap;
+}
+
+.alts button.on {
+  border-color: var(--cream);
+  background: #303731;
+  color: #fff;
+  font-weight: 700;
+}
+
+.spec-note {
+  margin: -4px 2px 0;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--dim);
+}

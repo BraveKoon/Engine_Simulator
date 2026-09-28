@@ -5,7 +5,7 @@ import { EngineView } from './engine3d.js';
 import { EngineAudio } from './audio.js';
 import { Tachometer } from './ui/gauge.js';
 import { Pedal, HShifter } from './ui/controls.js';
-import { CHASSIS, WHEELS, PAINT_SWATCHES, buildCar, tyreFor } from './car/catalog.js';
+import { CHASSIS, WHEELS, PAINT_SWATCHES, buildCar, tyreFor, carsFor } from './car/catalog.js';
 import { CarModel } from './car/car3d.js';
 import { wheelImage } from './car/wheelArt.js';
 
@@ -136,16 +136,24 @@ function openChassis() {
   $('chassisSub').textContent = `엔진: ${selected.name}`;
   const list = $('chassisList');
   list.innerHTML = '';
+  const avail = (id) => carsFor(selected.id, id).length > 0;
+  if (!avail(build.chassis)) build.chassis = CHASSIS.find((c) => avail(c.id)).id;
   for (const c of CHASSIS) {
     const b = document.createElement('button');
     b.className = 'chassis-card';
     b.dataset.id = c.id;
+    const matches = carsFor(selected.id, c.id);
+    b.disabled = matches.length === 0;
     b.innerHTML = `${CHASSIS_ART[c.id]}
       <h3>${c.name}<small>${c.en}</small></h3>
       <p>${c.desc}</p>
       <div class="pc"><div class="pro"><b>장점</b><ul>${c.pros.map((x) => `<li>${x}</li>`).join('')}</ul></div>
       <div class="con"><b>단점</b><ul>${c.cons.map((x) => `<li>${x}</li>`).join('')}</ul></div></div>
-      <div class="ex">예: <em>${c.examples.join(' · ')}</em></div>`;
+      ${
+        matches.length
+          ? `<div class="ex">${selected.code} + ${c.name} 실제 차: <em>${matches.slice(0, 4).map((m) => m.name).join(' · ')}${matches.length > 4 ? ` 외 ${matches.length - 4}대` : ''}</em></div>`
+          : `<div class="ex none">${selected.code} 엔진을 얹은 ${c.name} 양산차가 없어서 고를 수 없어요</div>`
+      }`;
     b.addEventListener('click', () => {
       build.chassis = c.id;
       markSelected(list, c.id);
@@ -169,18 +177,26 @@ $('chassisNext').addEventListener('click', () => openWheels());
 // ───────── Car builder: wheels ─────────
 function openWheels() {
   const ch = CHASSIS.find((c) => c.id === build.chassis);
-  $('wheelSub').textContent = `${selected.code} 엔진 · ${ch.name}`;
+  $('wheelSub').textContent = `${selected.code} 엔진 · ${ch.name} · 흐린 크기는 해당하는 실제 차가 없어요`;
   const list = $('wheelList');
   list.innerHTML = '';
+  const okInch = (inch) => carsFor(selected.id, build.chassis, inch).length > 0;
+  if (!okInch(build.inch)) build.inch = WHEELS.map((w) => w.inch).find(okInch);
   WHEELS.forEach((w, i) => {
     const tyre = tyreFor(build.chassis, w.inch);
+    const matches = carsFor(selected.id, build.chassis, w.inch);
     const b = document.createElement('button');
     b.className = 'wheel-card';
     b.dataset.id = String(w.inch);
     b.setAttribute('role', 'option');
+    b.disabled = matches.length === 0;
     b.innerHTML = `<div class="wheel-img"><img alt="${w.inch}인치 휠" /></div>
       <div class="w-inch">${w.inch}인치<small>${tyre.label}</small></div>
-      <ul>${w.cars.map((c) => `<li>${c}</li>`).join('')}</ul>`;
+      ${
+        matches.length
+          ? `<ul>${matches.slice(0, 3).map((c) => `<li>${c.name}</li>`).join('')}</ul>`
+          : '<p class="none">이 조건의 양산차 없음</p>'
+      }`;
     b.addEventListener('click', () => {
       build.inch = w.inch;
       markSelected(list, w.inch);
@@ -202,9 +218,21 @@ $('buildBtn').addEventListener('click', () => makeCar());
 
 // ───────── Car builder: result ─────────
 let carModel = null;
-function makeCar() {
-  car = buildCar(selected, build.chassis, build.inch);
+function makeCar(real) {
+  const matches = carsFor(selected.id, build.chassis, build.inch);
+  car = buildCar(selected, build.chassis, build.inch, real || matches[0]);
   show('result');
+  // other production cars that fit the same choices
+  const alt = $('carAlts');
+  alt.innerHTML = '';
+  alt.hidden = matches.length < 2;
+  for (const m of matches) {
+    const b = document.createElement('button');
+    b.textContent = m.name;
+    b.classList.toggle('on', m === car.real);
+    b.addEventListener('click', () => makeCar(m));
+    alt.appendChild(b);
+  }
   view.mount($('carStage'));
   view.controls.autoRotate = true;
   carModel = new CarModel(car);
@@ -212,7 +240,7 @@ function makeCar() {
   view.setView(0, true);
   $('carType').textContent = car.typeName;
   $('carName').textContent = car.name;
-  $('carSub').textContent = `${car.chassisName} · ${car.inch}인치 휠 · ${car.drive}`;
+  $('carSub').textContent = `${car.engine.code} · ${car.chassisName} · ${car.inch}인치 휠 · ${car.drive}`;
   const e = car.engine;
   const p = car.perf;
   const rows = [
@@ -223,7 +251,10 @@ function makeCar() {
     ['최대토크', `${e.maxTorque} Nm`],
     ['공차중량', `${car.mass.toLocaleString('en-US')} kg`],
     ['마력/톤', `${p.psPerTon} ps/t`],
+    ['길이×폭×높이 (m)', `${car.real.L.toFixed(2)}×${car.real.W.toFixed(2)}×${car.real.H.toFixed(2)}`],
     ['타이어', car.tyre.label],
+    ['휠베이스', `${car.real.wb.toFixed(2)} m`],
+    ['구동', car.drive.split(' ')[0]],
     ['지상고', `${Math.round(car.clearance * 1000)} mm`],
   ];
   $('carSpecs').innerHTML = rows.map(([k, v, big]) => `<div><dt>${k}</dt><dd${big ? ' class="big"' : ''}>${v}</dd></div>`).join('');

@@ -1,5 +1,8 @@
 import { peakPower } from '../engines.js';
 import { Simulator } from '../physics.js';
+import { carsFor } from './realCars.js';
+
+export { REAL_CARS, carsFor } from './realCars.js';
 
 export const CHASSIS = [
   {
@@ -49,6 +52,7 @@ export function tyreFor(chassis, inch) {
 export const BODY_TYPES = {
   hatch: { name: '해치백', L: 4.1, W: 1.78, wb: 2.6, fo: 0.82, clr: 0.14, mass: 1180, cda: 0.64, drive: 'FF 전륜구동' },
   sedan: { name: '세단', L: 4.85, W: 1.86, wb: 2.88, fo: 0.95, clr: 0.14, mass: 1480, cda: 0.6, drive: 'FR 후륜구동' },
+  fastback: { name: '리어엔진 스포츠카', L: 4.5, W: 1.85, wb: 2.45, fo: 0.95, clr: 0.12, mass: 1450, cda: 0.6, drive: 'RR 후륜구동' },
   coupe: { name: '스포츠 쿠페', L: 4.5, W: 1.9, wb: 2.65, fo: 0.95, clr: 0.12, mass: 1420, cda: 0.58, drive: 'FR 후륜구동' },
   super: { name: '슈퍼카', L: 4.55, W: 2.0, wb: 2.7, fo: 1.05, clr: 0.1, mass: 1350, cda: 0.56, drive: '미드십 AWD' },
   suv: { name: 'SUV', L: 4.8, W: 1.95, wb: 2.9, fo: 0.95, clr: 0.2, mass: 1850, cda: 0.82, drive: 'AWD 사륜구동' },
@@ -57,6 +61,7 @@ export const BODY_TYPES = {
 };
 
 const PAINTS = {
+  fastback: '#dcdad4',
   hatch: '#3f7fbf',
   sedan: '#2f3a44',
   coupe: '#c8372d',
@@ -67,62 +72,25 @@ const PAINTS = {
 };
 export const PAINT_SWATCHES = ['#c8372d', '#e8a41a', '#3f7fbf', '#2f3a44', '#dcdad4', '#4b5a3c', '#111214'];
 
-/** Decide what kind of car the three choices add up to. */
-export function classify(engine, chassis, inch) {
-  const cyl = engine.count;
-  if (chassis === 'frame') {
-    if (cyl <= 4 || inch <= 17) return 'pickup';
-    return 'offroad';
-  }
-  switch (engine.id) {
-    case 'w16':
-      return 'super';
-    case 'v12':
-    case 'v10':
-      return inch >= 19 ? 'super' : 'coupe';
-    case 'v8':
-      return inch >= 21 ? 'suv' : inch >= 19 ? 'coupe' : 'sedan';
-    case 'h6':
-      return 'coupe';
-    case 'i4':
-      return inch <= 16 ? 'hatch' : inch <= 18 ? 'sedan' : 'suv';
-    default: // i6, v6
-      return inch >= 20 ? 'suv' : 'sedan';
-  }
-}
-
-function carName(engine, type) {
-  const c = engine.code;
-  const big = engine.count >= 8;
-  return {
-    hatch: `${c} 핫해치`,
-    sedan: big ? `${c} 스포츠 세단` : `${c} 세단`,
-    coupe: `${c} GT 쿠페`,
-    super: engine.id === 'w16' ? `${c} 하이퍼카` : `${c} 슈퍼카`,
-    suv: big ? `${c} 퍼포먼스 SUV` : `${c} 크로스오버 SUV`,
-    offroad: `${c} 오프로더`,
-    pickup: `${c} 픽업트럭`,
-  }[type];
-}
-
-/** Build the full car description from the three choices. */
-export function buildCar(engine, chassis, inch) {
-  const type = classify(engine, chassis, inch);
-  const body = BODY_TYPES[type];
+/** Build the car description from the choices and the matching production car. */
+export function buildCar(engine, chassis, inch, real = carsFor(engine.id, chassis, inch)[0]) {
+  const type = real.type;
+  const base = BODY_TYPES[type];
+  // real proportions; overhangs split by layout (mid/rear engines carry less up front)
+  const frontShare = type === 'super' || type === 'fastback' ? 0.44 : 0.5;
+  const body = { ...base, L: real.L, W: real.W, H: real.H, wb: real.wb, fo: (real.L - real.wb) * frontShare };
   const tyre = tyreFor(chassis, inch);
-  const engineMass = 80 + engine.count * 17 + engine.turbo * 12;
-  const wheelMass = (inch - 15) * 6;
-  const mass = Math.round(body.mass + engineMass + wheelMass + (chassis === 'frame' ? 120 : 0));
   // Keep overall gearing similar across tyre sizes; trucks get shorter gearing.
   const final = engine.final * (tyre.radius / 0.33) * (chassis === 'frame' ? 1.12 : 1);
-  const clearance = body.clr + (tyre.radius - 0.33) * 0.8;
-  let drive = body.drive;
+  const clearance = base.clr + (tyre.radius - 0.33) * 0.8;
+  let drive = base.drive;
   if (type === 'sedan' && engine.count >= 8) drive = 'AWD 사륜구동';
-  if (type === 'hatch' && engine.turbo) drive = 'FF 전륜구동';
+  if (type === 'hatch' && engine.count >= 4) drive = 'FF 전륜구동';
   const car = {
     type,
-    typeName: engine.id === 'w16' && type === 'super' ? '하이퍼카' : body.name,
-    name: carName(engine, type),
+    typeName: engine.id === 'w16' ? '하이퍼카' : base.name,
+    name: real.name,
+    real,
     engine,
     chassis,
     chassisName: CHASSIS.find((c) => c.id === chassis).name,
@@ -130,13 +98,13 @@ export function buildCar(engine, chassis, inch) {
     design: WHEELS.find((w) => w.inch === inch).design,
     tyre,
     body,
-    mass,
+    mass: real.kg,
     wheelR: tyre.radius,
-    cda: body.cda,
+    cda: base.cda,
     final,
     drive,
     clearance,
-    paint: PAINTS[type],
+    paint: real.paint || PAINTS[type],
     power: peakPower(engine),
   };
   car.perf = estimatePerformance(car);
