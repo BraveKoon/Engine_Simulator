@@ -221,6 +221,7 @@ let carModel = null;
 function makeCar(real) {
   const matches = carsFor(selected.id, build.chassis, build.inch);
   car = buildCar(selected, build.chassis, build.inch, real || matches[0]);
+  if (CAR_MODELS[car.name]) car.paint = null; // real 3D models start in their own paint
   show('result');
   // other production cars that fit the same choices
   const alt = $('carAlts');
@@ -269,8 +270,7 @@ function makeCar(real) {
   $('carSpecs').innerHTML = rows.map(([k, v, big]) => `<div><dt>${k}</dt><dd${big ? ' class="big"' : ''}>${v}</dd></div>`).join('');
   const sw = $('swatches');
   sw.innerHTML = '';
-  // real 3D models start in their own paint ("원본", null); the rest can be recoloured
-  if (credit) car.paint = null;
+  // real 3D models offer their original paint ("원본", null) as the first swatch
   const first = credit ? null : car.paint;
   for (const hex of [first, ...PAINT_SWATCHES.filter((h) => h !== first)].slice(0, 7)) {
     const b = document.createElement('button');
