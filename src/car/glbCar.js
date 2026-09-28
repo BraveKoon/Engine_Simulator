@@ -32,15 +32,18 @@ const cache = new Map();
 function loadGltf(file) {
   if (!cache.has(file)) {
     const embedded = typeof window !== 'undefined' && window.__EMBEDDED_MODELS?.[file];
-    const p = embedded
-      ? fetch(`data:model/gltf-binary;base64,${embedded}`)
-          .then((r) => r.arrayBuffer())
-          .then((buf) => loader.parseAsync(buf, ''))
-      : loader.loadAsync(file);
+    const p = embedded ? Promise.resolve().then(() => loader.parseAsync(base64ToBuffer(embedded), '')) : loader.loadAsync(file);
     cache.set(file, p);
     p.catch(() => cache.delete(file));
   }
   return cache.get(file);
+}
+
+function base64ToBuffer(b64) {
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out.buffer;
 }
 
 /**
