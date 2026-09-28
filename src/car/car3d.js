@@ -93,7 +93,7 @@ export class CarModel {
     const rearAxle = frontAxle - b.wb;
     this.axles = [frontAxle, rearAxle];
 
-    const paint = this.mat(new THREE.MeshPhysicalMaterial({ color: car.paint, metalness: 0.55, roughness: 0.32, clearcoat: 1, clearcoatRoughness: 0.08 }));
+    const paint = this.mat(new THREE.MeshPhysicalMaterial({ color: car.paint || car.real?.paint || '#8a8f94', metalness: 0.55, roughness: 0.32, clearcoat: 1, clearcoatRoughness: 0.08 }));
     this.paint = paint;
     const trim = this.mat(new THREE.MeshStandardMaterial({ color: 0x17181a, metalness: 0.3, roughness: 0.6 }));
     const chrome = this.mat(new THREE.MeshStandardMaterial({ color: 0xdadde0, metalness: 1, roughness: 0.15 }));

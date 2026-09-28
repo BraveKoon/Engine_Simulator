@@ -6,7 +6,7 @@ import { EngineAudio } from './audio.js';
 import { Tachometer } from './ui/gauge.js';
 import { Pedal, HShifter } from './ui/controls.js';
 import { CHASSIS, WHEELS, PAINT_SWATCHES, buildCar, tyreFor, carsFor } from './car/catalog.js';
-import { CarModel } from './car/car3d.js';
+import { makeCarModel, CAR_MODELS } from './car/glbCar.js';
 import { wheelImage } from './car/wheelArt.js';
 
 const $ = (id) => document.getElementById(id);
@@ -235,9 +235,18 @@ function makeCar(real) {
   }
   view.mount($('carStage'));
   view.controls.autoRotate = true;
-  carModel = new CarModel(car);
+  carModel = makeCarModel(car, () => view.model === carModel && view.refit());
   view.setModel(carModel);
   view.setView(0, true);
+  const credit = CAR_MODELS[car.name];
+  $('modelCredit').hidden = !credit;
+  $('carStage').classList.toggle('has-credit', !!credit);
+  $('specNote').textContent = credit
+    ? '3D 모델은 아래 제작자의 모델을 실제 크기에 맞춰 표시한 거예요. 성능은 선택한 엔진을 이 차의 무게와 타이어로 시뮬레이션한 추정치예요.'
+    : '외형은 실제 차의 치수와 차체 형태를 따라 단순화한 모델이에요. 성능은 선택한 엔진을 이 차의 무게와 타이어로 시뮬레이션한 추정치예요.';
+  if (credit) {
+    $('modelCredit').innerHTML = `3D 모델: <a href="${credit.source}" target="_blank" rel="noopener">${credit.credit}</a>`;
+  }
   $('carType').textContent = car.typeName;
   $('carName').textContent = car.name;
   $('carSub').textContent = `${car.engine.code} · ${car.chassisName} · ${car.inch}인치 휠 · ${car.drive}`;
@@ -260,10 +269,13 @@ function makeCar(real) {
   $('carSpecs').innerHTML = rows.map(([k, v, big]) => `<div><dt>${k}</dt><dd${big ? ' class="big"' : ''}>${v}</dd></div>`).join('');
   const sw = $('swatches');
   sw.innerHTML = '';
-  for (const hex of [car.paint, ...PAINT_SWATCHES.filter((h) => h !== car.paint)].slice(0, 7)) {
+  // real 3D models start in their own paint ("원본", null); the rest can be recoloured
+  if (credit) car.paint = null;
+  const first = credit ? null : car.paint;
+  for (const hex of [first, ...PAINT_SWATCHES.filter((h) => h !== first)].slice(0, 7)) {
     const b = document.createElement('button');
-    b.style.background = hex;
-    b.setAttribute('aria-label', `색상 ${hex}`);
+    b.style.background = hex ?? 'conic-gradient(#8fd3ff, #1e3c78, #ff8a3d, #8fd3ff)';
+    b.setAttribute('aria-label', hex ? `색상 ${hex}` : '원래 색상');
     b.classList.toggle('on', hex === car.paint);
     b.addEventListener('click', () => {
       car.paint = hex;
@@ -315,7 +327,7 @@ async function startSim(withCar = null) {
 
 function setSimModel() {
   if (showCar && car) {
-    carModel = new CarModel(car);
+    carModel = makeCarModel(car, () => view.model === carModel && view.refit());
     view.setModel(carModel);
   } else {
     view.setEngine(sim.e);
@@ -338,7 +350,7 @@ function backToSelect() {
     show('result');
     view.mount($('carStage'));
     view.controls.autoRotate = true;
-    carModel = new CarModel(car);
+    carModel = makeCarModel(car, () => view.model === carModel && view.refit());
     view.setModel(carModel);
     view.setView(0, true);
   } else {

@@ -1411,3 +1411,23 @@ kbd {
   line-height: 1.5;
   color: var(--dim);
 }
+
+.model-credit {
+  position: absolute;
+  right: 16px;
+  bottom: 14px;
+  max-width: 55%;
+  z-index: 2;
+  font-size: 11px;
+  line-height: 1.4;
+  text-align: right;
+  color: #8c8d88;
+}
+
+.model-credit a {
+  color: inherit;
+}
+
+#carStage.has-credit .vp-hint {
+  display: none;
+}

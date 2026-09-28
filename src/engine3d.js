@@ -1061,6 +1061,11 @@ export class EngineView {
     this.scene.add(this.model.root);
     this.model.root.position.y = -this.model.floor;
     this.ground.position.y = 0;
+    this.refit();
+  }
+
+  /** Recompute framing (e.g. after a model finished loading) and reset the camera. */
+  refit() {
     this.model.root.updateMatrixWorld(true);
     const box = new THREE.Box3().setFromObject(this.model.root);
     const sphere = box.getBoundingSphere(new THREE.Sphere());
