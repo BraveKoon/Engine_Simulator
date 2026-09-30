@@ -81,15 +81,6 @@
     "license": "CC-BY-NC-4.0 (http://creativecommons.org/licenses/by-nc/4.0/)",
     "source": "https://sketchfab.com/3d-models/2024-hyundai-elantra-n-4ba1b1b0eb844e318cc708ada1f2f51f"
   },
-  "현대 싼타페": {
-    "file": "models/hyundai_santafe.glb",
-    "paint": [],
-    "trim": [],
-    "title": "2020 Hyundai Santa Fe TM 380T HTrac China",
-    "author": "Ddiaz Design (https://sketchfab.com/ddiaz-design)",
-    "license": "CC-BY-NC-4.0 (http://creativecommons.org/licenses/by-nc/4.0/)",
-    "source": "https://sketchfab.com/3d-models/2020-hyundai-santa-fe-tm-380t-htrac-china-0b21aa4f375249ff9fd421a0e41aa55e"
-  },
   "기아 스포티지": {
     "file": "models/kia_sportage.glb",
     "paint": [

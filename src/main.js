@@ -6,7 +6,7 @@ import { EngineAudio } from './audio.js';
 import { Tachometer } from './ui/gauge.js';
 import { Pedal, HShifter } from './ui/controls.js';
 import { CHASSIS, WHEELS, PAINT_SWATCHES, buildCar, tyreFor, carsFor } from './car/catalog.js';
-import { makeCarModel, CAR_MODELS } from './car/glbCar.js';
+import { makeCarModel, CAR_MODELS, GlbCarModel } from './car/glbCar.js';
 import { wheelImage } from './car/wheelArt.js';
 
 const $ = (id) => document.getElementById(id);
@@ -218,6 +218,63 @@ $('buildBtn').addEventListener('click', () => makeCar());
 
 // ───────── Car builder: result ─────────
 let carModel = null;
+
+// Put the built car into the 3D view. Cars with a real 3D model show a loading panel
+// while it downloads, with a small button to use the simplified model instead.
+function showCarModel(container) {
+  const model = makeCarModel(car, {
+    onChange: (m, what) => {
+      if (view.model !== m) return;
+      if (what === 'ready') view.refit();
+      renderModelUI(container, m);
+    },
+  });
+  carModel = model;
+  view.setModel(model);
+  view.setView(0, true);
+  renderModelUI(container, model);
+}
+
+function renderModelUI(container, m) {
+  let ui = container.querySelector('.model-ui');
+  if (!(m instanceof GlbCarModel)) {
+    if (ui) ui.hidden = true;
+    return;
+  }
+  if (!ui) {
+    ui = document.createElement('div');
+    ui.className = 'model-ui';
+    ui.innerHTML = `
+      <div class="model-loading" role="status">
+        <div class="spinner" aria-hidden="true"></div>
+        <b>실제 3D 모델 불러오는 중</b>
+        <div class="bar"><i></i></div>
+        <span class="pct">0%</span>
+      </div>
+      <button class="model-switch"></button>
+      <p class="model-error">3D 모델을 불러오지 못해 단순화 모델로 보여 드려요</p>`;
+    ui.querySelector('.model-switch').addEventListener('click', () => {
+      const cur = view.model;
+      if (cur instanceof GlbCarModel) cur.setSimplified(!cur.simplified);
+    });
+    container.appendChild(ui);
+  }
+  ui.hidden = false;
+  const pct = Math.round(m.progress * 100);
+  const loading = m.state === 'loading';
+  ui.querySelector('.model-loading').hidden = !(loading && !m.simplified);
+  ui.querySelector('.bar i').style.transform = `scaleX(${m.progress})`;
+  ui.querySelector('.pct').textContent = `${pct}%`;
+  ui.querySelector('.model-error').hidden = m.state !== 'error';
+  const btn = ui.querySelector('.model-switch');
+  btn.hidden = m.state === 'error';
+  btn.textContent = m.simplified
+    ? loading
+      ? `실제 3D 모델 보기 (불러오는 중 ${pct}%)`
+      : '실제 3D 모델 보기'
+    : '단순화 모델로 보기';
+}
+
 function makeCar(real) {
   const matches = carsFor(selected.id, build.chassis, build.inch);
   car = buildCar(selected, build.chassis, build.inch, real || matches[0]);
@@ -236,9 +293,7 @@ function makeCar(real) {
   }
   view.mount($('carStage'));
   view.controls.autoRotate = true;
-  carModel = makeCarModel(car, () => view.model === carModel && view.refit());
-  view.setModel(carModel);
-  view.setView(0, true);
+  showCarModel($('carStage'));
   const credit = CAR_MODELS[car.name];
   $('modelCredit').hidden = !credit;
   // models without a known body-paint material keep their own colours
@@ -329,10 +384,10 @@ async function startSim(withCar = null) {
 
 function setSimModel() {
   if (showCar && car) {
-    carModel = makeCarModel(car, () => view.model === carModel && view.refit());
-    view.setModel(carModel);
+    showCarModel($('viewport'));
   } else {
     view.setEngine(sim.e);
+    renderModelUI($('viewport'), null);
   }
   $('modelToggle').textContent = showCar ? '엔진 보기' : '차량 보기';
   $('viewBtn').textContent = view.setView(0, true);
@@ -352,9 +407,7 @@ function backToSelect() {
     show('result');
     view.mount($('carStage'));
     view.controls.autoRotate = true;
-    carModel = makeCarModel(car, () => view.model === carModel && view.refit());
-    view.setModel(carModel);
-    view.setView(0, true);
+    showCarModel($('carStage'));
   } else {
     openSelect(mode, true);
   }

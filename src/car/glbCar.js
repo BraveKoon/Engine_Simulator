@@ -34,21 +34,53 @@ function parseWithImageElements(buffer) {
   }
 }
 
-function loadGltf(file) {
-  if (!cache.has(file)) {
+// Download with progress (0..1) so the page can show how far along it is.
+async function download(url, onProgress, asText) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`${r.status} ${url}`);
+  const total = Number(r.headers.get('content-length')) || 0;
+  if (!r.body || !total) return asText ? r.text() : r.arrayBuffer();
+  const reader = r.body.getReader();
+  const chunks = [];
+  let got = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chunks.push(value);
+    got += value.length;
+    onProgress(Math.min(1, got / total));
+  }
+  const all = new Uint8Array(got);
+  let o = 0;
+  for (const c of chunks) (all.set(c, o), (o += c.length));
+  return asText ? new TextDecoder().decode(all) : all.buffer;
+}
+
+function loadGltf(file, onProgress) {
+  let entry = cache.get(file);
+  if (!entry) {
+    entry = { listeners: new Set(), progress: 0 };
+    const report = (f) => {
+      entry.progress = f;
+      for (const l of entry.listeners) l(f);
+    };
     const embedded = window.__EMBEDDED_MODELS?.[file];
-    const ok = (r) => (r.ok ? r : Promise.reject(new Error(`${r.status} ${file}`)));
     // some hosts only serve web file types: the page can ship models as base64 text
     const buf = embedded
       ? Promise.resolve(base64ToBuffer(embedded))
       : window.__MODELS_AS_TEXT
-        ? fetch(`${file}.txt`).then(ok).then((r) => r.text()).then(base64ToBuffer)
-        : fetch(file).then(ok).then((r) => r.arrayBuffer());
-    const p = buf.then(parseWithImageElements);
-    cache.set(file, p);
-    p.catch(() => cache.delete(file));
+        ? download(`${file}.txt`, report, true).then(base64ToBuffer)
+        : download(file, report, false);
+    entry.promise = buf.then(parseWithImageElements);
+    entry.promise.catch(() => cache.delete(file));
+    cache.set(file, entry);
   }
-  return cache.get(file);
+  if (onProgress) {
+    entry.listeners.add(onProgress);
+    onProgress(entry.progress);
+    entry.promise.finally(() => entry.listeners.delete(onProgress)).catch(() => {});
+  }
+  return entry.promise;
 }
 
 function base64ToBuffer(b64) {
@@ -58,30 +90,67 @@ function base64ToBuffer(b64) {
   return out.buffer;
 }
 
+// Remember "show the simplified car" across screens for this visit.
+export const modelPrefs = { simple: false };
+
 /**
- * Shows the simplified procedural car at once, then swaps in the real model
- * when it has loaded. Same interface as CarModel.
+ * A car with a real 3D model. While the model downloads nothing is shown (the page
+ * displays a loading panel); the simplified procedural car can be shown instead at
+ * any time with setSimplified(true). Same interface as CarModel.
+ * state: 'loading' | 'ready' | 'error'
  */
 export class GlbCarModel {
-  constructor(car, spec, onReady) {
+  constructor(car, spec, { onChange } = {}) {
     this.car = car;
     this.spec = spec;
+    this.onChange = onChange;
     this.root = new THREE.Group();
     this.floor = 0;
     this.fallback = new CarModel(car);
     this.views = this.fallback.views;
-    this.root.add(this.fallback.root);
+    this.root.add(this.fallback.root); // also frames the camera while loading
     this.paintMats = [];
     this.trimMats = [];
     this.disposed = false;
+    this.state = 'loading';
+    this.progress = 0;
     this.pendingPaint = car.paint || null; // keep a colour picked earlier
-    loadGltf(spec.file)
+    this.applyVisibility();
+    loadGltf(spec.file, (f) => {
+      this.progress = f;
+      this.onChange?.(this, 'progress');
+    })
       .then((gltf) => {
         if (this.disposed) return;
         this.install(gltf.scene.clone(true));
-        onReady?.(this);
+        this.state = 'ready';
+        this.applyVisibility();
+        this.onChange?.(this, 'ready');
       })
-      .catch((err) => console.warn('model load failed, keeping simplified car', err));
+      .catch((err) => {
+        console.warn('model load failed, showing the simplified car', err);
+        if (this.disposed) return;
+        this.state = 'error';
+        this.applyVisibility();
+        this.onChange?.(this, 'error');
+      });
+  }
+
+  get simplified() {
+    return this.state === 'error' || modelPrefs.simple;
+  }
+
+  setSimplified(on) {
+    modelPrefs.simple = on;
+    this.applyVisibility();
+    this.onChange?.(this, 'mode');
+  }
+
+  applyVisibility() {
+    const simple = this.simplified;
+    // while loading and not in simplified mode: keep the fallback for framing but hide it
+    this.fallback.root.visible = simple;
+    if (this.model) this.model.visible = !simple;
   }
 
   install(scene) {
@@ -99,14 +168,11 @@ export class GlbCarModel {
     });
     const holder = new THREE.Group();
     holder.add(scene);
-    holder.updateMatrixWorld(true);
     // models are pre-scaled and grounded by tools/prep-model.mjs; just centre them
     holder.updateMatrixWorld(true);
     const box = new THREE.Box3().setFromObject(holder);
     const c = box.getCenter(new THREE.Vector3());
     holder.position.set(-c.x, 0, -c.z);
-    this.root.remove(this.fallback.root);
-    this.fallback.dispose();
     this.root.add(holder);
     this.model = holder;
     this.spinners = [];
@@ -115,11 +181,9 @@ export class GlbCarModel {
   }
 
   setPaint(hex) {
-    if (!this.model) {
-      this.pendingPaint = hex;
-      if (hex) this.fallback.setPaint(hex);
-      return;
-    }
+    this.pendingPaint = hex;
+    this.fallback.setPaint(hex || this.car.real?.paint || '#8a8f94');
+    if (!this.model) return;
     if (!hex) {
       for (const m of [...this.paintMats, ...this.trimMats]) m.color.copy(m.userData.original);
       return;
@@ -130,19 +194,19 @@ export class GlbCarModel {
   }
 
   update(theta, rpm, state) {
-    if (!this.model) this.fallback.update(theta, rpm, state);
-    else for (const p of this.spinners) p.rotation.z = -(state.wheelAngle || 0);
+    this.fallback.update(theta, rpm, state);
+    if (this.spinners) for (const p of this.spinners) p.rotation.z = -(state.wheelAngle || 0);
   }
 
   dispose() {
     this.disposed = true;
-    if (!this.model) this.fallback.dispose();
+    this.fallback.dispose();
     for (const m of [...this.paintMats, ...this.trimMats]) m.dispose();
   }
 }
 
 /** The model to show for a built car: the real 3D model when we have one. */
-export function makeCarModel(car, onReady) {
+export function makeCarModel(car, opts) {
   const spec = CAR_MODELS[car.real?.name];
-  return spec ? new GlbCarModel(car, spec, onReady) : new CarModel(car);
+  return spec ? new GlbCarModel(car, spec, opts) : new CarModel(car);
 }
