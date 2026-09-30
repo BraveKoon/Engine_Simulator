@@ -241,6 +241,8 @@ function makeCar(real) {
   view.setView(0, true);
   const credit = CAR_MODELS[car.name];
   $('modelCredit').hidden = !credit;
+  // models without a known body-paint material keep their own colours
+  $('paintRow').hidden = !!credit && !credit.paint.length;
   $('carStage').classList.toggle('has-credit', !!credit);
   $('specNote').textContent = credit
     ? '3D 모델은 아래 제작자의 모델을 실제 크기에 맞춰 표시한 거예요. 성능은 선택한 엔진을 이 차의 무게와 타이어로 시뮬레이션한 추정치예요.'

@@ -1,0 +1,48 @@
+<!doctype html>
+<html>
+  <head><meta charset="utf-8" /><title>model check</title>
+  <style>body{margin:0;background:#eee;font:12px sans-serif} .cell{display:inline-block;margin:2px;background:#fff;text-align:center} canvas{display:block}</style></head>
+  <body>
+    <div id="grid"></div>
+    <script type="module">
+      import * as THREE from 'three';
+      import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+      import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
+      import MODELS from '/src/car/models.json';
+      const only = new URLSearchParams(location.search).get('only');
+      const files = [...new Set(Object.values(MODELS).map((m) => m.file))].filter((f) => !only || only.split(',').some((o) => f.includes(o)));
+      const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+      const W = 300, H = 170;
+      const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+      renderer.setSize(W, H);
+      const hl = new THREE.MeshBasicMaterial({ color: 0xff00ff });
+      for (const file of files) {
+        const gltf = await loader.loadAsync('/public/' + file);
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xf4f2ee);
+        scene.add(new THREE.HemisphereLight(0xffffff, 0x888888, 2.2));
+        const sun = new THREE.DirectionalLight(0xffffff, 1.5); sun.position.set(3, 5, 4); scene.add(sun);
+        const model = gltf.scene;
+        let wheels = 0;
+        model.traverse((o) => { if (/^wheel_/.test(o.name)) { wheels++; o.traverse((m) => m.isMesh && (m.material = hl)); } });
+        scene.add(model);
+        const grid = new THREE.GridHelper(8, 16, 0x999999, 0xcccccc); scene.add(grid);
+        const box = new THREE.Box3().setFromObject(model);
+        const size = box.getSize(new THREE.Vector3());
+        const cell = document.createElement('div'); cell.className = 'cell';
+        cell.innerHTML = `<b>${file.replace('models/', '')}</b> wheels:${wheels} L${size.x.toFixed(2)} W${size.z.toFixed(2)} H${size.y.toFixed(2)}`;
+        for (const [dir, target] of [[[0, 0.15, 1], [0, size.y / 2, 0]], [[1.1, 0.5, 0.9], [0, size.y / 3, 0]]]) {
+          const cam = new THREE.PerspectiveCamera(30, W / H, 0.1, 100);
+          const d = new THREE.Vector3(...dir).normalize().multiplyScalar(size.x * 2.1);
+          cam.position.copy(d).add(new THREE.Vector3(...target)); cam.lookAt(...target);
+          renderer.render(scene, cam);
+          const c = document.createElement('canvas'); c.width = W; c.height = H;
+          c.getContext('2d').drawImage(renderer.domElement, 0, 0);
+          cell.appendChild(c);
+        }
+        document.getElementById('grid').appendChild(cell);
+      }
+      document.title = 'done';
+    </script>
+  </body>
+</html>

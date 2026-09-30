@@ -1,0 +1,375 @@
+{
+  "_comment": "Source models (not committed) → public/models/<out>.glb. cars = REAL_CARS names that use the model. paint = body-paint material names (optional). yaw = override when auto-orientation is wrong.",
+  "models": [
+    {
+      "src": "bugatti_chiron.glb",
+      "out": "bugatti_chiron",
+      "cars": [
+        "부가티 시론"
+      ],
+      "paint": [
+        "body"
+      ],
+      "trim": [
+        "body2"
+      ]
+    },
+    {
+      "src": "2018_porsche_911.glb",
+      "out": "porsche_911",
+      "cars": [
+        "포르쉐 911 카레라"
+      ],
+      "paint": [
+        "carpaint"
+      ]
+    },
+    {
+      "src": "bugatti_veyron.glb",
+      "out": "bugatti_veyron",
+      "cars": [
+        "부가티 베이론"
+      ]
+    },
+    {
+      "src": "ferrari_812_superfast.glb",
+      "out": "ferrari_812",
+      "cars": [
+        "페라리 812 슈퍼패스트"
+      ],
+      "drop": "Glow"
+    },
+    {
+      "src": "ferrari_f8_tributo_2020/scene.gltf",
+      "out": "ferrari_f8",
+      "cars": [
+        "페라리 F8 트리뷰토"
+      ],
+      "up": "z"
+    },
+    {
+      "src": "ford_ranger_next-gen_2023_sport.glb",
+      "out": "ford_ranger",
+      "cars": [
+        "포드 레인저"
+      ],
+      "paint": [
+        "carpaint"
+      ]
+    },
+    {
+      "src": "hyundai_elantra_2022__ultra_low_poly.glb",
+      "out": "hyundai_avante",
+      "cars": [
+        "현대 아반떼"
+      ]
+    },
+    {
+      "src": "2024_hyundai_elantra_n.glb",
+      "out": "hyundai_avante_n",
+      "cars": [
+        "현대 아반떼 N"
+      ]
+    },
+    {
+      "src": "2020_hyundai_santa_fe_tm_380t_htrac_china.glb",
+      "out": "hyundai_santafe",
+      "cars": [
+        "현대 싼타페"
+      ]
+    },
+    {
+      "src": "kia_sportage.glb",
+      "out": "kia_sportage",
+      "cars": [
+        "기아 스포티지"
+      ],
+      "paint": [
+        "M_2022_Kia_Sportage__WO_Wheels__Wolf_Gray.001"
+      ]
+    },
+    {
+      "src": "kia_stinger.glb",
+      "out": "kia_stinger",
+      "cars": [
+        "기아 스팅어"
+      ],
+      "paint": [
+        "body"
+      ]
+    },
+    {
+      "src": "3d-scanned-kia-borrego-2008-free/source/agent kia borrego scan.glb",
+      "out": "kia_mohave",
+      "cars": [
+        "기아 모하비"
+      ],
+      "hold": "no licence info in source download"
+    },
+    {
+      "src": "bmw_m3_competition__hassan_visuals_3d/scene.gltf",
+      "out": "bmw_m3",
+      "cars": [
+        "BMW M3"
+      ],
+      "paint": [
+        "Material.032"
+      ]
+    },
+    {
+      "src": "low_poly_bmw_m5_f90.glb",
+      "out": "bmw_m5",
+      "cars": [
+        "BMW M5"
+      ],
+      "paint": [
+        "CarPaint"
+      ]
+    },
+    {
+      "src": "bmw_x5_g05/scene.gltf",
+      "out": "bmw_x5",
+      "cars": [
+        "BMW X5"
+      ]
+    },
+    {
+      "src": "toyota-gr-supra-a90/source/2020-toyota-supra-gr.glb",
+      "out": "toyota_supra",
+      "cars": [
+        "토요타 GR 수프라"
+      ]
+    },
+    {
+      "src": "nissan_gt-r_r35_nismo__www.vecarz.com/scene.gltf",
+      "out": "nissan_gtr",
+      "cars": [
+        "닛산 GT-R"
+      ]
+    },
+    {
+      "src": "porsche_cayenne/scene.gltf",
+      "out": "porsche_cayenne",
+      "cars": [
+        "포르쉐 카이엔",
+        "포르쉐 카이엔 터보"
+      ]
+    },
+    {
+      "src": "porsche_718_cayman_gt4_2020__www.vecarz.com.glb",
+      "out": "porsche_718_gt4",
+      "cars": [
+        "포르쉐 718 카이맨 GT4"
+      ]
+    },
+    {
+      "src": "mercedes_amg_gt.glb",
+      "out": "amg_gt",
+      "cars": [
+        "메르세데스-AMG GT"
+      ],
+      "paint": [
+        "body"
+      ]
+    },
+    {
+      "src": "2020_chevrolet_corvette_c8_stingray.glb",
+      "out": "corvette_c8",
+      "cars": [
+        "쉐보레 콜벳 C8"
+      ]
+    },
+    {
+      "src": "2017_ford_mustang_gt/scene.gltf",
+      "out": "ford_mustang_gt",
+      "cars": [
+        "포드 머스탱 GT"
+      ]
+    },
+    {
+      "src": "low_poly_lamborghini_urus.glb",
+      "out": "lamborghini_urus",
+      "cars": [
+        "람보르기니 우루스"
+      ],
+      "paint": [
+        "Material.001"
+      ]
+    },
+    {
+      "src": "lamborghini-huracan/source/2016_lamborghini_huracan.glb",
+      "out": "lamborghini_huracan",
+      "cars": [
+        "람보르기니 우라칸"
+      ]
+    },
+    {
+      "src": "lamborghini-aventador/source/lamborghini_aventador_lp750-4_sv.glb",
+      "out": "lamborghini_aventador",
+      "cars": [
+        "람보르기니 아벤타도르"
+      ]
+    },
+    {
+      "src": "audi_r8.glb",
+      "out": "audi_r8",
+      "cars": [
+        "아우디 R8"
+      ]
+    },
+    {
+      "src": "aston_martin_dbs_superleggera_2019.glb",
+      "out": "aston_dbs",
+      "cars": [
+        "애스턴마틴 DBS"
+      ]
+    },
+    {
+      "src": "rolls_royce_ghost.glb",
+      "out": "rr_ghost",
+      "cars": [
+        "롤스로이스 고스트"
+      ]
+    },
+    {
+      "src": "rolls_royce_cullinan.glb",
+      "out": "rr_cullinan",
+      "cars": [
+        "롤스로이스 컬리넌"
+      ]
+    },
+    {
+      "src": "2022_subaru_outback/scene.gltf",
+      "out": "subaru_outback",
+      "cars": [
+        "스바루 아웃백 3.6R"
+      ]
+    },
+    {
+      "src": "2022_toyota_hilux/scene.gltf",
+      "out": "toyota_hilux",
+      "cars": [
+        "토요타 하이럭스"
+      ]
+    },
+    {
+      "src": "2018_chevrolet_colorado_zr2.glb",
+      "out": "chevy_colorado",
+      "cars": [
+        "쉐보레 콜로라도"
+      ]
+    },
+    {
+      "src": "2011_ssangyong_rexton.glb",
+      "out": "kgm_rexton",
+      "cars": [
+        "KGM 렉스턴"
+      ]
+    },
+    {
+      "src": "2013_mercedes-benz_g-class_g_550.glb",
+      "out": "mercedes_g",
+      "cars": [
+        "메르세데스-벤츠 G 500",
+        "메르세데스-AMG G 63",
+        "메르세데스-AMG G 65"
+      ]
+    },
+    {
+      "src": "2021-ram-1500-trx/source/2021_ram_1500_trx.glb",
+      "out": "ram_1500",
+      "cars": [
+        "램 1500"
+      ]
+    },
+    {
+      "src": "toyota_land_cruiser_300/scene.gltf",
+      "out": "toyota_lc300",
+      "cars": [
+        "토요타 랜드크루저 300"
+      ]
+    },
+    {
+      "src": "2019_toyota_tacoma.glb",
+      "out": "toyota_tacoma",
+      "cars": [
+        "토요타 타코마"
+      ]
+    },
+    {
+      "src": "ford_f-150.glb",
+      "out": "ford_f150",
+      "cars": [
+        "포드 F-150"
+      ]
+    },
+    {
+      "src": "chevrolet_tahoe_2007.glb",
+      "out": "chevy_tahoe",
+      "cars": [
+        "쉐보레 타호"
+      ]
+    },
+    {
+      "src": "cadillac_escalade_ext.glb",
+      "out": "cadillac_escalade",
+      "cars": [
+        "캐딜락 에스컬레이드"
+      ]
+    },
+    {
+      "src": "2019-chevrolet-silverado-trail-boss-z71.glb",
+      "out": "chevy_silverado",
+      "cars": [
+        "쉐보레 실버라도"
+      ]
+    },
+    {
+      "src": "ford_f250_super_duty.glb",
+      "out": "ford_f250",
+      "cars": [
+        "포드 F-250 슈퍼듀티 (V10, ~2019)"
+      ]
+    },
+    {
+      "src": "2010-lexus-lfa/source/Lexus LFA.glb",
+      "out": "lexus_lfa",
+      "cars": [
+        "렉서스 LFA"
+      ],
+      "hold": "no licence info in source download"
+    },
+    {
+      "src": "2017-acura-nsx/source/Acura NSX.glb",
+      "out": "honda_nsx",
+      "cars": [
+        "혼다 NSX"
+      ],
+      "hold": "no licence info in source download"
+    },
+    {
+      "src": "bmw-m4-low-poly/source/bmw m4 lp.glb",
+      "out": "bmw_m4",
+      "cars": [
+        "BMW M4"
+      ],
+      "hold": "no licence info in source download"
+    },
+    {
+      "src": "custom-honda-civic-type-r-2024/source/Custom Honda Civic Typr-R (2024).glb",
+      "out": "honda_civic_type_r",
+      "cars": [
+        "혼다 시빅 타입 R"
+      ],
+      "hold": "no licence info in source download"
+    },
+    {
+      "src": "volkswagen-golf-gti-2021/source/MDL14776_reversed.glb",
+      "out": "vw_golf_gti",
+      "cars": [
+        "폭스바겐 골프 GTI"
+      ],
+      "hold": "no licence info in source download"
+    }
+  ]
+}

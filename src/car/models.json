@@ -1,0 +1,26 @@
+{
+  "부가티 시론": {
+    "file": "models/bugatti_chiron.glb",
+    "paint": [
+      "body"
+    ],
+    "trim": [
+      "body2"
+    ],
+    "title": "Bugatti chiron",
+    "author": "kevin (ケビン) (https://sketchfab.com/sohyalebret)",
+    "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+    "source": "https://sketchfab.com/3d-models/bugatti-chiron-b28585c3e5bc4fc78db39d80fcd6b604"
+  },
+  "포르쉐 911 카레라": {
+    "file": "models/porsche_911.glb",
+    "paint": [
+      "carpaint"
+    ],
+    "trim": [],
+    "title": "2018 Porsche 911",
+    "author": "Outlaw Games™ (https://sketchfab.com/Outlaw_Games)",
+    "license": "CC-BY-NC-4.0 (http://creativecommons.org/licenses/by-nc/4.0/)",
+    "source": "https://sketchfab.com/3d-models/2018-porsche-911-04f556e0a2aa425185dcee7f7f1e2ff1"
+  }
+}
