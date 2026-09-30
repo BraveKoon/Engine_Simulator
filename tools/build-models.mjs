@@ -47,14 +47,21 @@ for (const m of cfg.models) {
   const out = path.join('public/models', `${m.out}.glb`);
   console.log(`\n== ${m.out}  (${Math.round(tris / 1000)}k tris → ×${ratio.toFixed(2)})`);
   const run = (args) => execFileSync(process.execPath, args, { stdio: ['ignore', 'pipe', 'inherit'] }).toString();
-  execFileSync(cli, ['optimize', src, s1, '--compress', 'false', '--texture-compress', 'webp', '--texture-size', '1024',
-    '--simplify', ratio < 1 ? 'true' : 'false', '--simplify-ratio', String(ratio), '--simplify-error', '0.002',
+  // models shipped with identical placeholder materials: colour them before optimize
+  // (its dedup step would otherwise merge them all into one)
+  let input = src;
+  if (m.colors) {
+    input = path.join(tmp, `${m.out}.0.glb`);
+    run(['tools/prep-model.mjs', src, input, '--colors', JSON.stringify(m.colors), '--up', m.up || 'y', '--yaw', '0', '--no-wheels']);
+  }
+  execFileSync(cli, ['optimize', input, s1, '--compress', 'false', '--texture-compress', 'webp', '--texture-size', String(m.tex || 1024),
+    '--simplify', ratio < 1 ? 'true' : 'false', '--simplify-ratio', String(ratio), '--simplify-error', String(m.simplifyError ?? (tris > 3 * MAX_TRIS ? 0.012 : 0.004)),
     '--flatten', 'false', '--join', 'false', '--palette', 'false', '--instance', 'false'], { stdio: 'ignore' });
   const prepArgs = ['tools/prep-model.mjs', s1, s2, '--length', String(car.L)];
   if (m.yaw !== undefined) prepArgs.push('--yaw', String(m.yaw));
   if (m.exclude) prepArgs.push('--exclude', m.exclude);
   if (m.drop) prepArgs.push('--drop', m.drop);
-  if (m.up) prepArgs.push('--up', m.up);
+  if (m.up && !m.colors) prepArgs.push('--up', m.up); // colour pre-pass already turned it Y-up
   process.stdout.write(run(prepArgs));
   execFileSync(cli, ['optimize', s2, out, '--compress', 'meshopt', '--texture-compress', 'false', '--simplify', 'false',
     '--palette', 'false', '--instance', 'false', '--join-named', 'false'], { stdio: 'ignore' });
@@ -71,5 +78,26 @@ for (const m of cfg.models) {
   for (const name of m.cars) manifest[name] = entry;
 }
 fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n');
+// CREDITS.md: one row per model file (CC licences require attribution)
+const byFile = new Map();
+for (const [car, e] of Object.entries(manifest)) {
+  if (!byFile.has(e.file)) byFile.set(e.file, { ...e, cars: [] });
+  byFile.get(e.file).cars.push(car);
+}
+const lic = (l = '') => {
+  const [name, url] = l.split(' (');
+  return url ? `[${name}](${url.replace(/\)$/, '')})` : name;
+};
+const rows = [...byFile.values()]
+  .sort((a, b) => a.file.localeCompare(b.file))
+  .map((e) => `| \`public/${e.file}\` | ${e.cars.join(', ')} | "${(e.title || '').replace(/\|/g, '\\|')}" | ${e.author} | ${lic(e.license)} | ${e.source} |`);
+fs.writeFileSync(
+  'CREDITS.md',
+  `# 3D 모델 출처\n\n앱에 들어간 차량 3D 모델은 모두 Sketchfab에서 Creative Commons 라이선스로 공개된 모델이에요.\n` +
+    `모든 모델은 \`tools/build-models.mjs\`로 변경했어요: 폴리곤 단순화, 방향·크기 정규화, 바퀴 분리, meshopt 압축, 텍스처 WebP 변환.\n` +
+    `CC BY-NC(비상업) 라이선스 모델이 포함되어 있으니 상업적으로 쓰지 마세요. CC BY-NC-SA 모델의 변경본은 같은 라이선스로 배포돼요.\n\n` +
+    `| 파일 | 차량 | 모델 제목 | 제작자 | 라이선스 | 원본 |\n| --- | --- | --- | --- | --- | --- |\n${rows.join('\n')}\n\n` +
+    `모델을 추가하려면 원본을 받아 \`tools/models.json\`에 등록하고 \`node tools/build-models.mjs <원본 폴더> <out 이름>\`을 실행하세요.\n`,
+);
 fs.rmSync(tmp, { recursive: true, force: true });
 console.log(`\nwrote ${manifestPath} (${Object.keys(manifest).length} cars)`);

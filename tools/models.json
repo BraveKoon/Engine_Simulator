@@ -45,7 +45,36 @@
       "cars": [
         "페라리 F8 트리뷰토"
       ],
-      "up": "z"
+      "up": "z",
+      "tex": 512,
+      "colors": {
+        "body": "#b3100f",
+        "black": "#101010",
+        "black_matt": "#1a1a1a",
+        "black_shiny": "#050505",
+        "brakes3": "#c8a000",
+        "carbon": "#1c1c1c",
+        "chrome": "metal",
+        "silver": "metal",
+        "glass": "glass",
+        "d_glass": "glass",
+        "r_glass": "#8a0000",
+        "d_red": "#9a0000",
+        "grill": "#111111",
+        "interior": "#1e1a18",
+        "interior_red": "#6e1010",
+        "int_map": "#2a2522",
+        "tire_mat5": "#121212",
+        "plate": "#e8e8e8",
+        "logo": "#e8c000",
+        "material": "#303030",
+        "texture": "#303030"
+      },
+      "paint": [
+        "body"
+      ],
+      "yaw": 180,
+      "simplifyError": 0.003
     },
     {
       "src": "ford_ranger_next-gen_2023_sport.glb",
@@ -96,7 +125,8 @@
       ],
       "paint": [
         "body"
-      ]
+      ],
+      "tex": 512
     },
     {
       "src": "3d-scanned-kia-borrego-2008-free/source/agent kia borrego scan.glb",
@@ -114,7 +144,8 @@
       ],
       "paint": [
         "Material.032"
-      ]
+      ],
+      "tex": 512
     },
     {
       "src": "low_poly_bmw_m5_f90.glb",
@@ -153,7 +184,8 @@
       "cars": [
         "포르쉐 카이엔",
         "포르쉐 카이엔 터보"
-      ]
+      ],
+      "tex": 512
     },
     {
       "src": "porsche_718_cayman_gt4_2020__www.vecarz.com.glb",
@@ -177,7 +209,8 @@
       "out": "corvette_c8",
       "cars": [
         "쉐보레 콜벳 C8"
-      ]
+      ],
+      "yaw": 90
     },
     {
       "src": "2017_ford_mustang_gt/scene.gltf",
@@ -287,7 +320,8 @@
       "out": "toyota_lc300",
       "cars": [
         "토요타 랜드크루저 300"
-      ]
+      ],
+      "hold": "file is a tuning kit with extra body parts scattered around the car"
     },
     {
       "src": "2019_toyota_tacoma.glb",
@@ -322,14 +356,16 @@
       "out": "chevy_silverado",
       "cars": [
         "쉐보레 실버라도"
-      ]
+      ],
+      "tex": 512
     },
     {
       "src": "ford_f250_super_duty.glb",
       "out": "ford_f250",
       "cars": [
         "포드 F-250 슈퍼듀티 (V10, ~2019)"
-      ]
+      ],
+      "yaw": 0
     },
     {
       "src": "2010-lexus-lfa/source/Lexus LFA.glb",

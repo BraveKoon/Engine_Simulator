@@ -22,5 +22,390 @@
     "author": "Outlaw Games™ (https://sketchfab.com/Outlaw_Games)",
     "license": "CC-BY-NC-4.0 (http://creativecommons.org/licenses/by-nc/4.0/)",
     "source": "https://sketchfab.com/3d-models/2018-porsche-911-04f556e0a2aa425185dcee7f7f1e2ff1"
+  },
+  "부가티 베이론": {
+    "file": "models/bugatti_veyron.glb",
+    "paint": [],
+    "trim": [],
+    "title": "Bugatti Veyron",
+    "author": "David_Holiday (https://sketchfab.com/David_Holiday)",
+    "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+    "source": "https://sketchfab.com/3d-models/bugatti-veyron-653d089ba9304657ab7f0e3552a8f87b"
+  },
+  "페라리 812 슈퍼패스트": {
+    "file": "models/ferrari_812.glb",
+    "paint": [],
+    "trim": [],
+    "title": "ferrari 812 superfast",
+    "author": "amogusstrikesback2 (https://sketchfab.com/amogusstrikesback2)",
+    "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+    "source": "https://sketchfab.com/3d-models/ferrari-812-superfast-959f3e000c4841a1b5e43be09fb39392"
+  },
+  "페라리 F8 트리뷰토": {
+    "file": "models/ferrari_f8.glb",
+    "paint": [
+      "body"
+    ],
+    "trim": [],
+    "title": "Ferrari F8 Tributo 2020",
+    "author": "Nieve5677 (https://sketchfab.com/niev)",
+    "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+    "source": "https://sketchfab.com/3d-models/ferrari-f8-tributo-2020-696bd59a144a4457be2462245a9e011f"
+  },
+  "포드 레인저": {
+    "file": "models/ford_ranger.glb",
+    "paint": [
+      "carpaint"
+    ],
+    "trim": [],
+    "title": "Ford Ranger Next-Gen 2023 Sport",
+    "author": "Asadawut.Kaewma (https://sketchfab.com/Asadawut.Kaewma)",
+    "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+    "source": "https://sketchfab.com/3d-models/ford-ranger-next-gen-2023-sport-e93ac097ee9a46a4a9decca9aceed03c"
+  },
+  "현대 아반떼": {
+    "file": "models/hyundai_avante.glb",
+    "paint": [],
+    "trim": [],
+    "title": "Hyundai Elantra 2022 [ Ultra Low Poly ]",
+    "author": "AhmedE (https://sketchfab.com/erkenselami92)",
+    "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+    "source": "https://sketchfab.com/3d-models/hyundai-elantra-2022-ultra-low-poly-b30d0baf6c3d4ca4adf2f484a90fc861"
+  },
+  "현대 아반떼 N": {
+    "file": "models/hyundai_avante_n.glb",
+    "paint": [],
+    "trim": [],
+    "title": "2024 Hyundai Elantra N",
+    "author": "Ddiaz Design (https://sketchfab.com/ddiaz-design)",
+    "license": "CC-BY-NC-4.0 (http://creativecommons.org/licenses/by-nc/4.0/)",
+    "source": "https://sketchfab.com/3d-models/2024-hyundai-elantra-n-4ba1b1b0eb844e318cc708ada1f2f51f"
+  },
+  "현대 싼타페": {
+    "file": "models/hyundai_santafe.glb",
+    "paint": [],
+    "trim": [],
+    "title": "2020 Hyundai Santa Fe TM 380T HTrac China",
+    "author": "Ddiaz Design (https://sketchfab.com/ddiaz-design)",
+    "license": "CC-BY-NC-4.0 (http://creativecommons.org/licenses/by-nc/4.0/)",
+    "source": "https://sketchfab.com/3d-models/2020-hyundai-santa-fe-tm-380t-htrac-china-0b21aa4f375249ff9fd421a0e41aa55e"
+  },
+  "기아 스포티지": {
+    "file": "models/kia_sportage.glb",
+    "paint": [
+      "M_2022_Kia_Sportage__WO_Wheels__Wolf_Gray.001"
+    ],
+    "trim": [],
+    "title": "Kia Sportage",
+    "author": "karaman.arman (https://sketchfab.com/karaman.arman)",
+    "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+    "source": "https://sketchfab.com/3d-models/kia-sportage-98a84407998a4bc6b4dee912b289f15b"
+  },
+  "기아 스팅어": {
+    "file": "models/kia_stinger.glb",
+    "paint": [
+      "body"
+    ],
+    "trim": [],
+    "title": "Kia Stinger",
+    "author": "Car2022 (https://sketchfab.com/Car2022)",
+    "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+    "source": "https://sketchfab.com/3d-models/kia-stinger-b1493e68069f4b869743de7a4220a4f4"
+  },
+  "BMW M3": {
+    "file": "models/bmw_m3.glb",
+    "paint": [
+      "Material.032"
+    ],
+    "trim": [],
+    "title": "BMW m3 competition | Hassan Visuals 3D",
+    "author": "Hassan Visuals 3D (https://sketchfab.com/HassanVisuals3D)",
+    "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+    "source": "https://sketchfab.com/3d-models/bmw-m3-competition-hassan-visuals-3d-5fd8bc8cc7394f959e21086624fbc66b"
+  },
+  "BMW M5": {
+    "file": "models/bmw_m5.glb",
+    "paint": [
+      "CarPaint"
+    ],
+    "trim": [],
+    "title": "Low Poly BMW M5 F90",
+    "author": "kulonee (https://sketchfab.com/ynesolefru)",
+    "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+    "source": "https://sketchfab.com/3d-models/low-poly-bmw-m5-f90-87102e4f8f2b42c087ff1a4423b5cccd"
+  },
+  "BMW X5": {
+    "file": "models/bmw_x5.glb",
+    "paint": [],
+    "trim": [],
+    "title": "BMW X5 G05",
+    "author": "Nieve5677 (https://sketchfab.com/iori308408)",
+    "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+    "source": "https://sketchfab.com/3d-models/bmw-x5-g05-349d0204c0044528aff481ec19d33be2"
+  },
+  "토요타 GR 수프라": {
+    "file": "models/toyota_supra.glb",
+    "paint": [],
+    "trim": [],
+    "title": "Toyota Supra MK5 A90",
+    "author": "pryanex (https://sketchfab.com/pryanex)",
+    "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+    "source": "https://sketchfab.com/3d-models/toyota-supra-mk5-a90-30528ef37af844919074498f979b9515"
+  },
+  "닛산 GT-R": {
+    "file": "models/nissan_gtr.glb",
+    "paint": [],
+    "trim": [],
+    "title": "Nissan GT-R R35 Nismo | www.vecarz.com",
+    "author": "vecarz (https://sketchfab.com/heynic)",
+    "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+    "source": "https://sketchfab.com/3d-models/nissan-gt-r-r35-nismo-wwwvecarzcom-9cfbe4727b7f4af0a11772687c4a1f59"
+  },
+  "포르쉐 카이엔": {
+    "file": "models/porsche_cayenne.glb",
+    "paint": [],
+    "trim": [],
+    "title": "Porsche Cayenne",
+    "author": "Car2022 (https://sketchfab.com/Car2022)",
+    "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+    "source": "https://sketchfab.com/3d-models/porsche-cayenne-d1fd357faf314607afc39a67d5b4f4f1"
+  },
+  "포르쉐 카이엔 터보": {
+    "file": "models/porsche_cayenne.glb",
+    "paint": [],
+    "trim": [],
+    "title": "Porsche Cayenne",
+    "author": "Car2022 (https://sketchfab.com/Car2022)",
+    "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+    "source": "https://sketchfab.com/3d-models/porsche-cayenne-d1fd357faf314607afc39a67d5b4f4f1"
+  },
+  "포르쉐 718 카이맨 GT4": {
+    "file": "models/porsche_718_gt4.glb",
+    "paint": [],
+    "trim": [],
+    "title": "Porsche 718 Cayman GT4 2020 | www.vecarz.com",
+    "author": "vecarz (https://sketchfab.com/heynic)",
+    "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+    "source": "https://sketchfab.com/3d-models/porsche-718-cayman-gt4-2020-wwwvecarzcom-0b210ff1ee3e4f75acf3fd31e6b1b298"
+  },
+  "메르세데스-AMG GT": {
+    "file": "models/amg_gt.glb",
+    "paint": [
+      "body"
+    ],
+    "trim": [],
+    "title": "Mercedes AMG GT",
+    "author": "GT Cars (https://sketchfab.com/Car2022)",
+    "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+    "source": "https://sketchfab.com/3d-models/mercedes-amg-gt-64f23357da29450084321c42ecf39d4c"
+  },
+  "쉐보레 콜벳 C8": {
+    "file": "models/corvette_c8.glb",
+    "paint": [],
+    "trim": [],
+    "title": "2020 Chevrolet Corvette C8 Stingray",
+    "author": "Ddiaz Design (https://sketchfab.com/ddiaz-design)",
+    "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+    "source": "https://sketchfab.com/3d-models/2020-chevrolet-corvette-c8-stingray-f59b9f961c9b48c9b0f8cb59c6a345aa"
+  },
+  "포드 머스탱 GT": {
+    "file": "models/ford_mustang_gt.glb",
+    "paint": [],
+    "trim": [],
+    "title": "2017 Ford Mustang GT",
+    "author": "IsaacOldton (https://sketchfab.com/IsaacOldton)",
+    "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+    "source": "https://sketchfab.com/3d-models/2017-ford-mustang-gt-7dfe5e8c4198432385f596a780c043a3"
+  },
+  "람보르기니 우루스": {
+    "file": "models/lamborghini_urus.glb",
+    "paint": [
+      "Material.001"
+    ],
+    "trim": [],
+    "title": "Low Poly Lamborghini Urus",
+    "author": "SharkyStudios (https://sketchfab.com/sharkycat109)",
+    "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+    "source": "https://sketchfab.com/3d-models/low-poly-lamborghini-urus-f53a9e268c144aec9cc4b1a7b3f0fe27"
+  },
+  "람보르기니 우라칸": {
+    "file": "models/lamborghini_huracan.glb",
+    "paint": [],
+    "trim": [],
+    "title": "2016 Lamborghini Huracan",
+    "author": "RBLXSupercars (https://sketchfab.com/RBLXSupercars)",
+    "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+    "source": "https://sketchfab.com/3d-models/2016-lamborghini-huracan-32f8ddbfb9ef45b085b0fa614f43af0f"
+  },
+  "람보르기니 아벤타도르": {
+    "file": "models/lamborghini_aventador.glb",
+    "paint": [],
+    "trim": [],
+    "title": "2019 Lamborghini Aventador SVJ",
+    "author": "Ddiaz Design (https://sketchfab.com/ddiaz-design)",
+    "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+    "source": "https://sketchfab.com/3d-models/2019-lamborghini-aventador-svj-1910d24bbad34fdda0c4fe30f01b3cc1"
+  },
+  "아우디 R8": {
+    "file": "models/audi_r8.glb",
+    "paint": [],
+    "trim": [],
+    "title": "Audi R8",
+    "author": "wallon (https://sketchfab.com/realwallon)",
+    "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+    "source": "https://sketchfab.com/3d-models/audi-r8-e17e438f076f4427a58d93aa779edaed"
+  },
+  "애스턴마틴 DBS": {
+    "file": "models/aston_dbs.glb",
+    "paint": [],
+    "trim": [],
+    "title": "Aston Martin DBS Superleggera 2019",
+    "author": "kevin (ケビン) (https://sketchfab.com/sohyalebret)",
+    "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+    "source": "https://sketchfab.com/3d-models/aston-martin-dbs-superleggera-2019-c7fb95e6b7ce40df8e3c4a55b7ecf9d9"
+  },
+  "롤스로이스 고스트": {
+    "file": "models/rr_ghost.glb",
+    "paint": [],
+    "trim": [],
+    "title": "Rolls Royce Ghost",
+    "author": "kurojishi (https://sketchfab.com/kurojishi)",
+    "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+    "source": "https://sketchfab.com/3d-models/rolls-royce-ghost-1f614e803fc24946b83bdc2dd9926d62"
+  },
+  "롤스로이스 컬리넌": {
+    "file": "models/rr_cullinan.glb",
+    "paint": [],
+    "trim": [],
+    "title": "Rolls Royce Cullinan",
+    "author": "NewViStudios (https://sketchfab.com/newvistudios)",
+    "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+    "source": "https://sketchfab.com/3d-models/rolls-royce-cullinan-61f16a1d5be2403abcdd8fa552f730f7"
+  },
+  "스바루 아웃백 3.6R": {
+    "file": "models/subaru_outback.glb",
+    "paint": [],
+    "trim": [],
+    "title": "2022 Subaru Outback",
+    "author": "tonielpro520 (https://sketchfab.com/tonielpro520)",
+    "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+    "source": "https://sketchfab.com/3d-models/2022-subaru-outback-a44abee6689e429881209fc6299f505c"
+  },
+  "토요타 하이럭스": {
+    "file": "models/toyota_hilux.glb",
+    "paint": [],
+    "trim": [],
+    "title": "2022 Toyota Hilux",
+    "author": "BHP3D (https://sketchfab.com/BHP3D)",
+    "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+    "source": "https://sketchfab.com/3d-models/2022-toyota-hilux-82bd37c5065040098fb0b86e07fcb959"
+  },
+  "쉐보레 콜로라도": {
+    "file": "models/chevy_colorado.glb",
+    "paint": [],
+    "trim": [],
+    "title": "2018 Chevrolet Colorado ZR2",
+    "author": "Galaxy Car Showroom (https://sketchfab.com/adrianaflak09)",
+    "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+    "source": "https://sketchfab.com/3d-models/2018-chevrolet-colorado-zr2-09f6928f1b8741efabb5fc56a5d7d549"
+  },
+  "KGM 렉스턴": {
+    "file": "models/kgm_rexton.glb",
+    "paint": [],
+    "trim": [],
+    "title": "2011 Ssangyong Rexton",
+    "author": "tonielpro520 (https://sketchfab.com/tonielpro520)",
+    "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+    "source": "https://sketchfab.com/3d-models/2011-ssangyong-rexton-a424dad4bda7493ba440d51c651e0e83"
+  },
+  "메르세데스-벤츠 G 500": {
+    "file": "models/mercedes_g.glb",
+    "paint": [],
+    "trim": [],
+    "title": "2013_mercedes-benz_g-class_g_550",
+    "author": "007 (https://sketchfab.com/tangwang920)",
+    "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+    "source": "https://sketchfab.com/3d-models/2013-mercedes-benz-g-class-g-550-78e54e9dbc7c46dc98ccb01c2c58ad97"
+  },
+  "메르세데스-AMG G 63": {
+    "file": "models/mercedes_g.glb",
+    "paint": [],
+    "trim": [],
+    "title": "2013_mercedes-benz_g-class_g_550",
+    "author": "007 (https://sketchfab.com/tangwang920)",
+    "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+    "source": "https://sketchfab.com/3d-models/2013-mercedes-benz-g-class-g-550-78e54e9dbc7c46dc98ccb01c2c58ad97"
+  },
+  "메르세데스-AMG G 65": {
+    "file": "models/mercedes_g.glb",
+    "paint": [],
+    "trim": [],
+    "title": "2013_mercedes-benz_g-class_g_550",
+    "author": "007 (https://sketchfab.com/tangwang920)",
+    "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+    "source": "https://sketchfab.com/3d-models/2013-mercedes-benz-g-class-g-550-78e54e9dbc7c46dc98ccb01c2c58ad97"
+  },
+  "램 1500": {
+    "file": "models/ram_1500.glb",
+    "paint": [],
+    "trim": [],
+    "title": "2021 Ram 1500 TRX",
+    "author": "Ddiaz Design (https://sketchfab.com/ddiaz-design)",
+    "license": "CC-BY-NC-SA-4.0 (http://creativecommons.org/licenses/by-nc-sa/4.0/)",
+    "source": "https://sketchfab.com/3d-models/2021-ram-1500-trx-372fbf37230c46eca1997841bfaf0758"
+  },
+  "토요타 타코마": {
+    "file": "models/toyota_tacoma.glb",
+    "paint": [],
+    "trim": [],
+    "title": "2019 Toyota Tacoma",
+    "author": "David_Holiday (https://sketchfab.com/David_Holiday)",
+    "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+    "source": "https://sketchfab.com/3d-models/2019-toyota-tacoma-8bb91f037ec64151ba72279c50ce5c20"
+  },
+  "포드 F-150": {
+    "file": "models/ford_f150.glb",
+    "paint": [],
+    "trim": [],
+    "title": "Ford F-150",
+    "author": "GT Cars (https://sketchfab.com/Car2022)",
+    "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+    "source": "https://sketchfab.com/3d-models/ford-f-150-c205cde66b1d4f14b1820b89de7b8d23"
+  },
+  "쉐보레 타호": {
+    "file": "models/chevy_tahoe.glb",
+    "paint": [],
+    "trim": [],
+    "title": "Chevrolet Tahoe 2007",
+    "author": "David_Holiday (https://sketchfab.com/David_Holiday)",
+    "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+    "source": "https://sketchfab.com/3d-models/chevrolet-tahoe-2007-a11d407e141b4a88b2a424060075e357"
+  },
+  "캐딜락 에스컬레이드": {
+    "file": "models/cadillac_escalade.glb",
+    "paint": [],
+    "trim": [],
+    "title": "Cadillac Escalade EXT",
+    "author": "David_Holiday (https://sketchfab.com/David_Holiday)",
+    "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+    "source": "https://sketchfab.com/3d-models/cadillac-escalade-ext-818ba34d6b5a428491435d76726c8f0a"
+  },
+  "쉐보레 실버라도": {
+    "file": "models/chevy_silverado.glb",
+    "paint": [],
+    "trim": [],
+    "title": "2019-chevrolet-silverado-trail-boss-z71",
+    "author": "007 (https://sketchfab.com/tangwang920)",
+    "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+    "source": "https://sketchfab.com/3d-models/2019-chevrolet-silverado-trail-boss-z71-e6569ae6adbf4aea81ed992d57e963f0"
+  },
+  "포드 F-250 슈퍼듀티 (V10, ~2019)": {
+    "file": "models/ford_f250.glb",
+    "paint": [],
+    "trim": [],
+    "title": "Ford F250 Super Duty",
+    "author": "David_Holiday (https://sketchfab.com/David_Holiday)",
+    "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+    "source": "https://sketchfab.com/3d-models/ford-f250-super-duty-2ddf67a348834f58b99594893b7dc011"
   }
 }

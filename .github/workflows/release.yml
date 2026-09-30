@@ -28,7 +28,7 @@ jobs:
       - run: npm run build
       - name: Package
         run: |
-          npm run standalone -- engine-simulator.html
+          npm run standalone -- engine-simulator.html --no-models
           (cd dist && zip -qr ../engine-simulator-web-${VERSION}.zip .)
       - name: Publish release
         env:

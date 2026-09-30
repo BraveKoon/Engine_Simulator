@@ -28,12 +28,29 @@ const targetLength = Number(opt('length', 0));
 const excludeRe = new RegExp(opt('exclude', 'caliper|spare|steering.?wheel'), 'i');
 const dropRe = opt('drop') ? new RegExp(opt('drop'), 'i') : null; // parts to delete (glow planes…)
 const upAxis = opt('up', 'y'); // 'z' for models exported Z-up
+// --colors '{"body":"#c00000","glass":"glass","chrome":"metal"}' for models shipped without materials
+const colors = opt('colors') ? JSON.parse(opt('colors')) : null;
 
 await MeshoptDecoder.ready;
 const io = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({ 'meshopt.decoder': MeshoptDecoder });
 const doc = await io.read(input);
 const root = doc.getRoot();
 const scene = root.getDefaultScene() || root.listScenes()[0];
+if (colors) {
+  for (const m of root.listMaterials()) {
+    const c = colors[m.getName()];
+    if (!c) continue;
+    if (c === 'glass') {
+      m.setBaseColorFactor([0.05, 0.07, 0.09, 0.35]).setAlphaMode('BLEND').setMetallicFactor(0).setRoughnessFactor(0.05);
+    } else if (c === 'metal') {
+      m.setBaseColorFactor([0.85, 0.86, 0.88, 1]).setMetallicFactor(1).setRoughnessFactor(0.2);
+    } else {
+      const h = parseInt(c.slice(1), 16);
+      const lin = (v) => Math.pow(v / 255, 2.2);
+      m.setBaseColorFactor([lin(h >> 16), lin((h >> 8) & 255), lin(h & 255), 1]).setMetallicFactor(0.2).setRoughnessFactor(0.45);
+    }
+  }
+}
 const buffer = root.listBuffers()[0] || doc.createBuffer();
 
 // ---- small matrix helpers (column-major 4x4) -------------------------------
@@ -278,7 +295,7 @@ for (const g of geo) {
     }
   }
 }
-const wheels = Object.entries(cands).map(([q, b]) => ({
+const wheels = (args.includes('--no-wheels') ? [] : Object.entries(cands)).map(([q, b]) => ({
   name: `wheel_${q}`,
   c: [(b.mn[0] + b.mx[0]) / 2, (b.mn[1] + b.mx[1]) / 2, (b.mn[2] + b.mx[2]) / 2],
   r: (b.mx[1] - b.mn[1]) / 2,

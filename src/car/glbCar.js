@@ -37,7 +37,13 @@ function parseWithImageElements(buffer) {
 function loadGltf(file) {
   if (!cache.has(file)) {
     const embedded = window.__EMBEDDED_MODELS?.[file];
-    const buf = embedded ? Promise.resolve(base64ToBuffer(embedded)) : fetch(file).then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(r.status))));
+    const ok = (r) => (r.ok ? r : Promise.reject(new Error(`${r.status} ${file}`)));
+    // some hosts only serve web file types: the page can ship models as base64 text
+    const buf = embedded
+      ? Promise.resolve(base64ToBuffer(embedded))
+      : window.__MODELS_AS_TEXT
+        ? fetch(`${file}.txt`).then(ok).then((r) => r.text()).then(base64ToBuffer)
+        : fetch(file).then(ok).then((r) => r.arrayBuffer());
     const p = buf.then(parseWithImageElements);
     cache.set(file, p);
     p.catch(() => cache.delete(file));
