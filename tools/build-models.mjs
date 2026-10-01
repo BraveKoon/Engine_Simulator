@@ -11,6 +11,7 @@ import path from 'node:path';
 import { NodeIO } from '@gltf-transform/core';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
 import { MeshoptDecoder } from 'meshoptimizer';
+import draco3d from 'draco3dgltf';
 import { REAL_CARS } from '../src/car/realCars.js';
 
 const [srcDir, ...only] = process.argv.slice(2);
@@ -21,7 +22,7 @@ const cli = path.resolve('node_modules/.bin/gltf-transform');
 const MAX_TRIS = 180000;
 
 await MeshoptDecoder.ready;
-const io = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({ 'meshopt.decoder': MeshoptDecoder });
+const io = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({ 'meshopt.decoder': MeshoptDecoder, 'draco3d.decoder': await draco3d.createDecoderModule() });
 const manifestPath = 'src/car/models.json';
 const manifest = fs.existsSync(manifestPath) ? JSON.parse(fs.readFileSync(manifestPath, 'utf8')) : {};
 
@@ -61,6 +62,7 @@ for (const m of cfg.models) {
   if (m.yaw !== undefined) prepArgs.push('--yaw', String(m.yaw));
   if (m.exclude) prepArgs.push('--exclude', m.exclude);
   if (m.drop) prepArgs.push('--drop', m.drop);
+  if (m.wheels === false) prepArgs.push('--no-wheels'); // wheels fused into the body (scans, merged meshes)
   if (m.up && !m.colors) prepArgs.push('--up', m.up); // colour pre-pass already turned it Y-up
   process.stdout.write(run(prepArgs));
   execFileSync(cli, ['optimize', s2, out, '--compress', 'meshopt', '--texture-compress', 'false', '--simplify', 'false',

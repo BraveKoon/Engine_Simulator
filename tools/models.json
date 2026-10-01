@@ -130,12 +130,12 @@
       "tex": 512
     },
     {
-      "src": "3d-scanned-kia-borrego-2008-free/source/agent kia borrego scan.glb",
+      "src": "new/kia-borrego-2008.glb",
       "out": "kia_mohave",
       "cars": [
         "기아 모하비"
       ],
-      "hold": "no licence info in source download"
+      "wheels": false
     },
     {
       "src": "bmw_m3_competition__hassan_visuals_3d/scene.gltf",
@@ -317,7 +317,7 @@
       ]
     },
     {
-      "src": "toyota_land_cruiser_300/scene.gltf",
+      "src": "new/toyota-land-cruiser-300.glb",
       "out": "toyota_lc300",
       "cars": [
         "토요타 랜드크루저 300"
@@ -369,44 +369,87 @@
       "yaw": 0
     },
     {
-      "src": "2010-lexus-lfa/source/Lexus LFA.glb",
+      "src": "new/lexus-lfa-2010.glb",
       "out": "lexus_lfa",
       "cars": [
         "렉서스 LFA"
-      ],
-      "hold": "no licence info in source download"
+      ]
     },
     {
-      "src": "2017-acura-nsx/source/Acura NSX.glb",
+      "src": "new/acura-nsx-2017.glb",
       "out": "honda_nsx",
       "cars": [
         "혼다 NSX"
-      ],
-      "hold": "no licence info in source download"
+      ]
     },
     {
-      "src": "bmw-m4-low-poly/source/bmw m4 lp.glb",
+      "src": "new/bmw-m4-low-poly.glb",
       "out": "bmw_m4",
       "cars": [
         "BMW M4"
-      ],
-      "hold": "no licence info in source download"
+      ]
     },
     {
-      "src": "custom-honda-civic-type-r-2024/source/Custom Honda Civic Typr-R (2024).glb",
+      "src": "new/honda-civic-type-r-2024.glb",
       "out": "honda_civic_type_r",
       "cars": [
         "혼다 시빅 타입 R"
-      ],
-      "hold": "no licence info in source download"
+      ]
     },
     {
-      "src": "volkswagen-golf-gti-2021/source/MDL14776_reversed.glb",
+      "src": "new/volkswagen-golf-gti-2021.glb",
       "out": "vw_golf_gti",
       "cars": [
         "폭스바겐 골프 GTI"
+      ]
+    },
+    {
+      "src": "new/kgm-rexton-sports.glb",
+      "out": "kgm_rexton_sports",
+      "cars": [
+        "KGM 렉스턴 스포츠"
       ],
-      "hold": "no licence info in source download"
+      "wheels": false
+    },
+    {
+      "src": "new/genesis-g80.glb",
+      "out": "genesis_g80",
+      "cars": [
+        "제네시스 G80"
+      ],
+      "wheels": false
+    },
+    {
+      "src": "new/genesis-gv80.glb",
+      "out": "genesis_gv80",
+      "cars": [
+        "제네시스 GV80"
+      ],
+      "up": "-y"
+    },
+    {
+      "src": "new/hyundai-palisade.glb",
+      "out": "hyundai_palisade",
+      "cars": [
+        "현대 팰리세이드"
+      ],
+      "up": "-y"
+    },
+    {
+      "src": "new/hyundai-sonata.glb",
+      "out": "hyundai_sonata",
+      "cars": [
+        "현대 쏘나타"
+      ],
+      "drop": "Body\\.001_35"
+    },
+    {
+      "src": "new/dodge-ram-srt-10.glb",
+      "out": "dodge_ram_srt10",
+      "cars": [
+        "닷지 램 SRT-10"
+      ],
+      "yaw": 137.3
     }
   ]
 }

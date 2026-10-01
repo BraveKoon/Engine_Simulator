@@ -16,6 +16,7 @@ import { NodeIO, Primitive } from '@gltf-transform/core';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
 import { prune, dedup } from '@gltf-transform/functions';
 import { MeshoptDecoder } from 'meshoptimizer';
+import draco3d from 'draco3dgltf';
 
 const args = process.argv.slice(2);
 const [input, output] = args;
@@ -32,7 +33,7 @@ const upAxis = opt('up', 'y'); // 'z' for models exported Z-up
 const colors = opt('colors') ? JSON.parse(opt('colors')) : null;
 
 await MeshoptDecoder.ready;
-const io = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({ 'meshopt.decoder': MeshoptDecoder });
+const io = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({ 'meshopt.decoder': MeshoptDecoder, 'draco3d.decoder': await draco3d.createDecoderModule() });
 const doc = await io.read(input);
 const root = doc.getRoot();
 const scene = root.getDefaultScene() || root.listScenes()[0];
@@ -127,6 +128,9 @@ const geo = parts.filter((p) => !(dropRe && dropRe.test(p.path))).map((p) => ({ 
 if (upAxis === 'z') {
   // (x, y, z) -> (x, z, -y)
   for (const g of geo) for (const A of [g.P, g.N]) if (A) for (let i = 0; i < A.length; i += 3) [A[i + 1], A[i + 2]] = [A[i + 2], -A[i + 1]];
+} else if (upAxis === '-y') {
+  // upside-down export: turn 180° about X
+  for (const g of geo) for (const A of [g.P, g.N]) if (A) for (let i = 0; i < A.length; i += 3) [A[i + 1], A[i + 2]] = [-A[i + 1], -A[i + 2]];
 }
 
 // ---- 2. orientation, scale, ground ------------------------------------------
@@ -243,7 +247,7 @@ function components(g) {
     if (a !== b) parent[a] = b;
   };
   const weld = new Map();
-  for (let i = 0; i < nv; i++) {
+  for (let i = 0; i < (args.includes('--no-weld') ? 0 : nv); i++) {
     const key = `${Math.round(g.P[i * 3] * 1000)},${Math.round(g.P[i * 3 + 1] * 1000)},${Math.round(g.P[i * 3 + 2] * 1000)}`;
     const w = weld.get(key);
     if (w === undefined) weld.set(key, i);
@@ -284,6 +288,9 @@ for (const g of geo) {
     const size = dy > 0.45 && dy < Math.min(1.25, H * 0.75);
     const grounded = c.mn[1] < 0.06 * H + 0.02;
     const corner = Math.abs(cxp) > L * 0.18 && Math.abs(czp) > 0.35 && dz < 0.6;
+    if (process.env.DEBUG_WHEELS && dy > 0.3 && c.mn[1] < 0.25 * H) {
+      console.log(`  piece ${g.path.slice(0, 40)} d=${dx.toFixed(2)},${dy.toFixed(2)},${dz.toFixed(2)} at ${cxp.toFixed(2)},${czp.toFixed(2)} bottom ${c.mn[1].toFixed(2)} ${round ? '' : 'NOT-ROUND '}${size ? '' : 'SIZE '}${grounded ? '' : 'NOT-GROUNDED '}${corner ? '' : 'NOT-CORNER'}`);
+    }
     if (round && size && grounded && corner) {
       const q = quad(cxp, czp);
       const b = (cands[q] ||= { mn: [Infinity, Infinity, Infinity], mx: [-Infinity, -Infinity, -Infinity], n: 0 });
