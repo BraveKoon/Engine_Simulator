@@ -1,0 +1,71 @@
+<!doctype html>
+<html>
+  <head><meta charset="utf-8" /><title>simplified car check</title>
+  <style>body{margin:0;background:#ddd;font:11px sans-serif} .cell{display:inline-block;margin:2px;background:#fff;vertical-align:top} canvas{display:block} .cell div{padding:2px 4px}</style></head>
+  <body>
+    <div id="grid"></div>
+    <script type="module">
+      // Renders every real car as the simplified procedural model (side, 3/4, front)
+      // to review proportions and tyre / wheel-arch clearance. ?only=name&inch=max
+      import * as THREE from 'three';
+      import { REAL_CARS } from '/src/car/realCars.js';
+      import { BODY_TYPES, CHASSIS, WHEELS, tyreFor } from '/src/car/catalog.js';
+      import { ENGINES } from '/src/engines.js';
+      import { CarModel } from '/src/car/car3d.js';
+      const q = new URLSearchParams(location.search);
+      const only = q.get('only');
+      const pickMax = q.get('inch') === 'max';
+      const W = +(q.get('w') || 260), H = W / 2;
+      const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+      renderer.setSize(W, H);
+      for (const real of REAL_CARS.filter((r) => !only || only.split(',').some((o) => r.name.includes(o)))) {
+        const inch = pickMax ? Math.max(...real.wheels) : Math.min(...real.wheels);
+        const engine = ENGINES.find((e) => e.id === real.engine);
+        const base = BODY_TYPES[real.type];
+        const frontShare = real.type === 'super' || real.type === 'fastback' ? 0.44 : 0.5;
+        const tyre = tyreFor(real.chassis, inch);
+        const car = {
+          type: real.type, real, engine, chassis: real.chassis, inch, tyre,
+          design: WHEELS.find((w) => w.inch === inch).design,
+          body: { ...base, L: real.L, W: real.W, H: real.H, wb: real.wb, fo: (real.L - real.wb) * frontShare },
+          wheelR: tyre.radius, paint: real.paint,
+        };
+        const model = new CarModel(car);
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xf4f2ee);
+        scene.add(new THREE.HemisphereLight(0xffffff, 0x777777, 2.4));
+        const sun = new THREE.DirectionalLight(0xffffff, 1.6); sun.position.set(3, 6, 4); scene.add(sun);
+        scene.add(model.root);
+        const grid = new THREE.GridHelper(10, 20, 0x999999, 0xcccccc); scene.add(grid);
+        const cell = document.createElement('div'); cell.className = 'cell';
+        const views = [
+          ['side', new THREE.Vector3(0, 0.6, 10)],
+          ['34', new THREE.Vector3(6, 3.2, 6.5)],
+          ['front', new THREE.Vector3(10, 0, 0)],
+          ['top', new THREE.Vector3(0, 10, 0.001)],
+        ];
+        const row = document.createElement('div'); row.style.display = 'flex';
+        for (const [name, pos] of views) {
+          const s = +(q.get("zoom") || 3.3);
+          const cam = new THREE.OrthographicCamera(-s, s, s * H / W + 0.6, -s * H / W + 0.6, 0.1, 50);
+          if (name === 'front') { cam.left = -2.8; cam.right = 2.8; cam.bottom = -0.05; cam.top = 2.75; }
+          if (name === 'top') { cam.left = -3.3; cam.right = 3.3; cam.top = 3.3 * H / W; cam.bottom = -cam.top; cam.up.set(0, 0, -1); }
+          cam.updateProjectionMatrix();
+          cam.position.copy(pos);
+          cam.lookAt(0, name === 'side' ? 0.6 : 0, 0);
+          if (name === '34') { const pc = new THREE.PerspectiveCamera(30, W / H, 0.1, 50); pc.position.copy(pos); pc.lookAt(0, 0.6, 0); renderer.render(scene, pc); }
+          else renderer.render(scene, cam);
+          const c = document.createElement('canvas'); c.width = W; c.height = H;
+          c.getContext('2d').drawImage(renderer.domElement, 0, 0);
+          row.appendChild(c);
+        }
+        cell.appendChild(row);
+        const label = document.createElement('div'); label.textContent = `${real.name} · ${real.type} · ${inch}" · ${tyre.label}`;
+        cell.appendChild(label);
+        document.getElementById('grid').appendChild(cell);
+        model.dispose();
+      }
+      document.title = 'done';
+    </script>
+  </body>
+</html>

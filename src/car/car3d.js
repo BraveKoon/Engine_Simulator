@@ -6,8 +6,8 @@ import { rimCanvas } from './wheelArt.js';
 // `wind` / `rear` index the outline segments that carry the windscreens.
 const PROFILES = {
   hatch: {
-    top: [[0.5, 0.32], [0.5, 0.56], [0.46, 0.72], [0.3, 0.84], [0.12, 1.4], [-0.3, 1.47], [-0.46, 1.4], [-0.5, 1.05], [-0.5, 0.32]],
-    glass: [[0.265, 0.93], [0.118, 1.35], [-0.29, 1.41], [-0.43, 1.34], [-0.455, 1.0]],
+    top: [[0.5, 0.32], [0.5, 0.56], [0.46, 0.72], [0.3, 0.84], [0.12, 1.4], [-0.26, 1.47], [-0.45, 1.32], [-0.5, 1.02], [-0.5, 0.32]],
+    glass: [[0.265, 0.93], [0.118, 1.35], [-0.25, 1.41], [-0.42, 1.27], [-0.45, 1.0]],
     wind: 3,
     rear: 6,
   },
@@ -54,6 +54,33 @@ const PROFILES = {
     rear: -1,
   },
 };
+
+// Rebuild a shape from its sampled outline without repeated or near-collinear points;
+// those make the triangulator fill in the wheel arches.
+function cleanShape(shape) {
+  const src = shape.getPoints(28);
+  const pts = [];
+  for (const p of src) {
+    const q = pts[pts.length - 1];
+    if (!q || q.distanceTo(p) > 0.003) pts.push(p);
+  }
+  while (pts.length > 3 && pts[0].distanceTo(pts[pts.length - 1]) < 0.003) pts.pop();
+  for (let changed = true; changed; ) {
+    changed = false;
+    for (let i = 0; i < pts.length && pts.length > 3; i++) {
+      const a = pts[(i - 1 + pts.length) % pts.length];
+      const b = pts[i];
+      const c = pts[(i + 1) % pts.length];
+      const cross = (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
+      if (Math.abs(cross) < 1e-6) {
+        pts.splice(i, 1);
+        changed = true;
+        i--;
+      }
+    }
+  }
+  return new THREE.Shape(pts);
+}
 
 export class CarModel {
   constructor(car) {
@@ -107,18 +134,44 @@ export class CarModel {
     const belt = Math.min(...glassPts.map((p) => p[1])) - 0.03;
     // smooth the upper outline (keeps the bumper corners)
     const curve = new THREE.CatmullRomCurve3(pts.slice(1, -1).map(([x, y]) => new THREE.Vector3(x, y, 0)), false, 'centripetal');
-    const smooth = curve.getSpacedPoints(80).map((v) => [v.x, v.y]);
+    const smooth = curve.getSpacedPoints(120).map((v) => [v.x, v.y]);
+    // The lower body's rounded edge grows outward from the outline (an inward offset
+    // can fold the cap over a thin fender and cover the wheel), so cut the arches and
+    // the floor that much bigger.
+    const BEVEL = 0.05;
     const archR = wr + 0.06;
-    const bottom = clr;
+    const cutR = archR + BEVEL;
+    // Fenders: wherever a wheel arch would reach above the bonnet / rear deck, raise the
+    // outline into a fender with a smooth shoulder so the tyre never shows through.
+    const fenderTop = wr + archR + 0.1;
+    const fender = (x) => {
+      let need = 0;
+      for (const [ax, dir, end] of [[frontAxle, 1, L / 2], [rearAxle, -1, -L / 2]]) {
+        const d = (x - ax) * dir; // > 0 toward that bumper
+        const flat = -archR * 0.8;
+        const fall = 0.4;
+        if (d < flat - fall) continue;
+        // flat fender line out to the bumper, easing down toward the cabin
+        const t = d >= flat ? 1 : Math.cos(((flat - d) / fall) * (Math.PI / 2)) ** 2;
+        // and a rounded nose / tail over the last 40 cm
+        const toEnd = Math.abs(end - x);
+        const nose = Math.min(1, toEnd / 0.4);
+        need = Math.max(need, (fenderTop - 0.14 * (1 - Math.sqrt(nose))) * t);
+      }
+      return need;
+    };
+    const cabinLine = smooth.map((p) => [...p]); // the cabin follows the unraised roofline
+    for (const p of smooth) p[1] = Math.max(p[1], fender(p[0]));
+    const bottom = clr + BEVEL;
     const rb = pts[pts.length - 1];
     const fb = pts[0];
-    const extrude = (shape, width, bevel) => {
+    const extrude = (shape, width, bevel, outward = false) => {
       const g = new THREE.ExtrudeGeometry(shape, {
         depth: width - bevel * 2,
         bevelEnabled: true,
         bevelThickness: bevel,
         bevelSize: bevel,
-        bevelOffset: -bevel,
+        bevelOffset: outward ? 0 : -bevel,
         bevelSegments: 5,
         curveSegments: 28,
       });
@@ -132,25 +185,45 @@ export class CarModel {
 
     // lower body: silhouette clipped at the belt line
     const lower = new THREE.Shape();
-    lower.moveTo(rb[0], Math.max(rb[1], bottom + 0.1));
-    lower.lineTo(rb[0] + 0.1, bottom);
+    lower.moveTo(rb[0] + BEVEL, Math.max(rb[1], bottom + 0.1));
+    lower.lineTo(rb[0] + BEVEL + 0.1, bottom);
     for (const ax of [rearAxle, frontAxle]) {
-      const sn = Math.max(-1, Math.min(1, (bottom - wr) / archR));
+      const sn = Math.max(-1, Math.min(1, (bottom - wr) / cutR));
       const phi = Math.asin(sn);
-      lower.lineTo(ax - archR * Math.cos(phi), bottom);
-      lower.absarc(ax, wr, archR, Math.PI - phi, phi, true);
+      lower.lineTo(ax - cutR * Math.cos(phi), bottom);
+      lower.absarc(ax, wr, cutR, Math.PI - phi, phi, true);
     }
-    lower.lineTo(fb[0] - 0.1, bottom);
-    lower.lineTo(fb[0], Math.max(fb[1], bottom + 0.1));
-    for (const [x, y] of smooth) lower.lineTo(x, Math.min(y, belt + 0.04));
+    lower.lineTo(fb[0] - BEVEL - 0.1, bottom);
+    lower.lineTo(fb[0] - BEVEL, Math.max(fb[1], bottom + 0.1));
+    // top edge front -> rear; keep it strictly inside the bumpers and moving rearward,
+    // otherwise the triangulator can fill in a wheel arch
+    let px = fb[0] - BEVEL;
+    for (const [x0, y] of smooth) {
+      const x = Math.min(px - 0.004, Math.max(rb[0] + BEVEL + 0.004, x0));
+      if (x >= px) continue;
+      lower.lineTo(x, Math.min(y, Math.max(belt + 0.04, fender(x))));
+      px = x;
+    }
     lower.closePath();
-    extrude(lower, W, 0.09);
+    extrude(cleanShape(lower), W, BEVEL, true);
+    // height of the body's top surface (bonnet / deck) at x
+    const topAt = (x) => {
+      for (let i = 1; i < smooth.length; i++) {
+        const [x0, y0] = smooth[i - 1];
+        const [x1, y1] = smooth[i];
+        if ((x0 - x) * (x1 - x) <= 0) {
+          const y = x0 === x1 ? y0 : y0 + ((y1 - y0) * (x - x0)) / (x1 - x0);
+          return Math.min(y, Math.max(belt + 0.04, fender(x))) + BEVEL;
+        }
+      }
+      return belt;
+    };
 
     // cabin: the part of the outline above the belt, narrower than the body
     const above = [];
-    for (let i = 0; i < smooth.length - 1; i++) {
-      const [x0, y0] = smooth[i];
-      const [x1, y1] = smooth[i + 1];
+    for (let i = 0; i < cabinLine.length - 1; i++) {
+      const [x0, y0] = cabinLine[i];
+      const [x1, y1] = cabinLine[i + 1];
       if (y0 >= belt) above.push([x0, y0]);
       if ((y0 - belt) * (y1 - belt) < 0) {
         const t = (belt - y0) / (y1 - y0);
@@ -222,8 +295,8 @@ export class CarModel {
       this.body.add(tl);
       // mirror
       const mirrorAt = glassPts[0];
-      const mir = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.1, 0.18), paint);
-      mir.position.set(mirrorAt[0] - 0.05, mirrorAt[1] + 0.02, s * (W / 2 + 0.08));
+      const mir = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.09, 0.14), paint);
+      mir.position.set(mirrorAt[0] - 0.08, belt + 0.1, s * (Wc / 2 + 0.07));
       mir.castShadow = true;
       this.body.add(mir);
     }
@@ -249,24 +322,26 @@ export class CarModel {
     }
 
     // type-specific details
-    if (car.type === 'super' || (car.type === 'coupe' && car.engine.count >= 8)) {
-      const wingY = pts[pts.length - 2][1] + 0.22;
-      const wing = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.03, W - 0.2), trim);
-      wing.position.set(rear + 0.2, wingY, 0);
-      wing.rotation.z = 0.08;
+    if (car.type === 'super') {
+      // low rear wing standing on the deck
+      const wx = rear + 0.2;
+      const wingY = topAt(wx) + 0.14;
+      const wing = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.03, W - 0.24), trim);
+      wing.position.set(wx, wingY, 0);
+      wing.rotation.z = 0.06;
       this.body.add(wing);
-      for (const s of [-0.5, 0.5]) {
-        const st = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.2, 0.03), trim);
-        st.position.set(rear + 0.22, wingY - 0.1, s * (W - 0.9));
+      for (const s of [-1, 1]) {
+        const st = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.18, 0.025), trim);
+        st.position.set(wx + 0.02, wingY - 0.08, s * (W / 2 - 0.45));
         this.body.add(st);
       }
     }
-    if (car.engine.count >= 8 && car.type !== 'super') {
+    if (car.engine.id === 'v8' && car.type === 'coupe') {
       // hood scoop for the big engines
       const scoop = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.06, 0.5), trim);
-      const hood = pts[2];
-      scoop.position.set((hood[0] + pts[3][0]) / 2, (hood[1] + pts[3][1]) / 2 + 0.04, 0);
-      scoop.rotation.z = Math.atan2(pts[3][1] - hood[1], pts[3][0] - hood[0]) + Math.PI;
+      const sx = (pts[2][0] + pts[3][0]) / 2;
+      scoop.position.set(sx, topAt(sx) + 0.01, 0);
+      scoop.rotation.z = Math.atan2(topAt(sx + 0.25) - topAt(sx - 0.25), 0.5);
       this.body.add(scoop);
     }
     if (car.type === 'offroad') {
