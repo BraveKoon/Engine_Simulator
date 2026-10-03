@@ -1,167 +1,104 @@
-// Canvas tachometer styled like a classic analogue dial.
-export class Tachometer {
+// RPM bar graph: a strip of segments like a dyno-cell readout, with a scale underneath
+// and a peak-hold marker. Colours come from the page's CSS tokens so it follows the theme.
+const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+export class RpmBar {
   constructor(canvas) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
     this.max = 8;
     this.red = 7;
-    this.value = 0;
     this.shown = 0;
-    this.flash = false;
-    this.size = 0;
+    this.peak = 0;
+    this.peakT = 0;
+    this.w = 0;
+    this.h = 0;
+    const mq = window.matchMedia?.('(prefers-color-scheme: dark)');
+    mq?.addEventListener?.('change', () => (this.w = 0));
+    new MutationObserver(() => (this.w = 0)).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
   }
 
   configure(redline) {
     this.red = redline / 1000;
     this.max = Math.ceil(redline / 1000 + 0.6);
-    this.size = 0; // force background redraw
+    this.peak = 0;
+    this.w = 0; // force a redraw of the static parts
   }
 
   resize() {
     const r = this.canvas.getBoundingClientRect();
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const size = Math.round(Math.min(r.width, r.height) * dpr);
-    if (size && size !== this.size) {
-      this.size = size;
-      this.canvas.width = size;
-      this.canvas.height = size;
-      this.bg = document.createElement('canvas');
-      this.bg.width = size;
-      this.bg.height = size;
-      this.drawFace(this.bg.getContext('2d'), size);
+    const w = Math.round(r.width * dpr);
+    const h = Math.round(r.height * dpr);
+    if (!w || !h || (w === this.w && h === this.h)) return;
+    this.w = w;
+    this.h = h;
+    this.dpr = dpr;
+    this.canvas.width = w;
+    this.canvas.height = h;
+    this.col = { ink: css('--ink'), dim: css('--rule'), sig: css('--signal'), hot: css('--hot'), muted: css('--ink-2') };
+    // segment layout: one segment per 250 rpm
+    this.n = this.max * 4;
+    this.pad = 2 * dpr;
+    this.barH = Math.round(h * 0.6);
+    this.gap = Math.max(1, Math.round(2 * dpr));
+    this.segW = (w - this.pad * 2 - this.gap * (this.n - 1)) / this.n;
+    // static scale
+    this.bg = document.createElement('canvas');
+    this.bg.width = w;
+    this.bg.height = h;
+    const c = this.bg.getContext('2d');
+    c.font = `500 ${Math.round(10 * dpr)}px 'IBM Plex Mono', ui-monospace, monospace`;
+    c.textBaseline = 'bottom';
+    for (let k = 0; k <= this.max; k++) {
+      const x = this.pad + (k * 4) * (this.segW + this.gap) - this.gap / 2;
+      c.fillStyle = k >= this.red ? this.col.hot : this.col.muted;
+      c.textAlign = k === 0 ? 'left' : k === this.max ? 'right' : 'center';
+      c.fillText(String(k), Math.min(w - this.pad, Math.max(this.pad, x)), h);
+      c.fillRect(Math.min(w - dpr, Math.max(0, x - dpr / 2)), this.barH + 2 * dpr, dpr, 4 * dpr);
     }
   }
 
-  angle(v) {
-    const t = Math.max(0, Math.min(1.04, v / this.max));
-    return (135 + t * 270) * (Math.PI / 180);
-  }
-
-  drawFace(c, S) {
-    const cx = S / 2;
-    const cy = S / 2;
-    const R = S / 2;
-    c.clearRect(0, 0, S, S);
-    // bezel
-    const bez = c.createRadialGradient(cx, cy - R * 0.3, R * 0.2, cx, cy, R);
-    bez.addColorStop(0, '#4a4f55');
-    bez.addColorStop(1, '#16181b');
-    c.fillStyle = bez;
-    c.beginPath();
-    c.arc(cx, cy, R * 0.99, 0, Math.PI * 2);
-    c.fill();
-    c.fillStyle = '#0d0f11';
-    c.beginPath();
-    c.arc(cx, cy, R * 0.9, 0, Math.PI * 2);
-    c.fill();
-    // red zone
-    c.strokeStyle = '#e8553b';
-    c.lineWidth = R * 0.07;
-    c.beginPath();
-    c.arc(cx, cy, R * 0.8, this.angle(this.red), this.angle(this.max));
-    c.stroke();
-    // ticks
-    for (let i = 0; i <= this.max * 5; i++) {
-      const v = i / 5;
-      const a = this.angle(v);
-      const major = i % 5 === 0;
-      const r0 = R * (major ? 0.7 : 0.76);
-      const r1 = R * 0.84;
-      c.strokeStyle = v >= this.red ? '#ff6a4d' : '#e9ecef';
-      c.lineWidth = major ? R * 0.028 : R * 0.012;
-      c.beginPath();
-      c.moveTo(cx + Math.cos(a) * r0, cy + Math.sin(a) * r0);
-      c.lineTo(cx + Math.cos(a) * r1, cy + Math.sin(a) * r1);
-      c.stroke();
-      if (major) {
-        c.fillStyle = v >= this.red ? '#ff7a5c' : '#f1f3f5';
-        c.font = `600 ${Math.round(R * 0.15)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
-        c.textAlign = 'center';
-        c.textBaseline = 'middle';
-        c.fillText(String(v), cx + Math.cos(a) * R * 0.56, cy + Math.sin(a) * R * 0.56);
-      }
-    }
-    c.fillStyle = '#c3c8cd';
-    c.font = `500 ${Math.round(R * 0.095)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
-    c.fillText('RPM ×1000', cx, cy - R * 0.34);
-    c.fillStyle = '#9aa1a8';
-    c.fillText('rpm', cx, cy + R * 0.72);
+  segColor(i) {
+    const v = (i + 1) / 4; // top of this segment in krpm
+    if (v > this.red) return this.col.hot;
+    if (v > this.red - 1) return this.col.sig;
+    return this.col.ink;
   }
 
   draw(rpm, dt, limiter) {
     this.resize();
-    if (!this.size) return;
-    const S = this.size;
+    if (!this.w) return;
     const c = this.ctx;
-    const R = S / 2;
-    const cx = R;
-    const cy = R;
-    // needle has a little inertia
-    const target = rpm / 1000;
-    this.shown += (target - this.shown) * Math.min(1, dt * 22);
-    c.clearRect(0, 0, S, S);
-    c.drawImage(this.bg, 0, 0);
+    const k = rpm / 1000;
+    this.shown += (k - this.shown) * Math.min(1, dt * 25);
+    if (this.shown >= this.peak) {
+      this.peak = this.shown;
+      this.peakT = 0;
+    } else if ((this.peakT += dt) > 1.2) this.peak = Math.max(this.shown, this.peak - dt * 3);
 
-    // shift light glow
-    if (rpm / 1000 > this.red - 0.35) {
-      const on = limiter ? (performance.now() % 120) < 60 : true;
-      if (on) {
-        c.strokeStyle = 'rgba(255,90,60,0.55)';
-        c.lineWidth = R * 0.05;
-        c.beginPath();
-        c.arc(cx, cy, R * 0.93, 0, Math.PI * 2);
-        c.stroke();
+    c.clearRect(0, 0, this.w, this.h);
+    c.drawImage(this.bg, 0, 0);
+    const lit = this.shown * 4;
+    // near the redline the whole strip flashes; on the limiter it strobes
+    const shift = k > this.red - 0.3;
+    const strobe = limiter && performance.now() % 140 < 70;
+    for (let i = 0; i < this.n; i++) {
+      const x = this.pad + i * (this.segW + this.gap);
+      const f = Math.max(0, Math.min(1, lit - i));
+      c.fillStyle = this.col.dim;
+      c.fillRect(x, 0, this.segW, this.barH);
+      if (f > 0 && !strobe) {
+        c.fillStyle = shift ? this.col.hot : this.segColor(i);
+        const hh = this.barH * (0.35 + 0.65 * f);
+        c.fillRect(x, this.barH - hh, this.segW, hh);
       }
     }
-
-    // digital readout
-    const bw = R * 0.9;
-    const bh = R * 0.3;
-    c.fillStyle = '#1f2326';
-    c.strokeStyle = '#3b4146';
-    c.lineWidth = R * 0.02;
-    roundRect(c, cx - bw / 2, cy + R * 0.3, bw, bh, R * 0.08);
-    c.fill();
-    c.stroke();
-    c.fillStyle = '#f4f6f7';
-    c.font = `600 ${Math.round(R * 0.2)}px ui-monospace, SFMono-Regular, Menlo, monospace`;
-    c.textAlign = 'center';
-    c.textBaseline = 'middle';
-    c.fillText(Math.round(rpm).toLocaleString('en-US'), cx, cy + R * 0.3 + bh / 2 + R * 0.01);
-
-    // needle
-    const a = this.angle(this.shown);
-    c.save();
-    c.translate(cx, cy);
-    c.rotate(a);
-    c.shadowColor = 'rgba(0,0,0,0.5)';
-    c.shadowBlur = R * 0.05;
-    c.fillStyle = '#ff6b3d';
-    c.beginPath();
-    c.moveTo(-R * 0.14, -R * 0.025);
-    c.lineTo(R * 0.8, -R * 0.008);
-    c.lineTo(R * 0.8, R * 0.008);
-    c.lineTo(-R * 0.14, R * 0.025);
-    c.closePath();
-    c.fill();
-    c.restore();
-    c.fillStyle = '#2b2f33';
-    c.beginPath();
-    c.arc(cx, cy, R * 0.085, 0, Math.PI * 2);
-    c.fill();
-    c.fillStyle = '#6c737a';
-    c.beginPath();
-    c.arc(cx, cy, R * 0.04, 0, Math.PI * 2);
-    c.fill();
+    // peak hold
+    const pi = Math.min(this.n - 1, Math.floor(this.peak * 4 - 0.001));
+    if (pi > 0) {
+      c.fillStyle = this.segColor(pi);
+      c.fillRect(this.pad + pi * (this.segW + this.gap), 0, this.segW, 3 * this.dpr);
+    }
   }
-}
-
-function roundRect(c, x, y, w, h, r) {
-  c.beginPath();
-  c.moveTo(x + r, y);
-  c.arcTo(x + w, y, x + w, y + h, r);
-  c.arcTo(x + w, y + h, x, y + h, r);
-  c.arcTo(x, y + h, x, y, r);
-  c.arcTo(x, y, x + w, y, r);
-  c.closePath();
 }

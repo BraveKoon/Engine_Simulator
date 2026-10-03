@@ -3,216 +3,230 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#1c211e" />
+    <meta name="theme-color" content="#e7ebef" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0f1520" media="(prefers-color-scheme: dark)" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <title>엔진 시뮬레이터</title>
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%231c211e'/%3E%3Cpath d='M14 40a18 18 0 0 1 36 0' fill='none' stroke='%23f1efea' stroke-width='4'/%3E%3Cpath d='M32 40 46 28' stroke='%23ff6b3d' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E" />
+    <title>Piston Lab</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='8' fill='%2314213d'/%3E%3Crect x='20' y='10' width='24' height='22' fill='%23f2b705'/%3E%3Cpath d='M32 32v12' stroke='%23e7ebef' stroke-width='5'/%3E%3Ccircle cx='32' cy='48' r='7' fill='none' stroke='%23e7ebef' stroke-width='4'/%3E%3C/svg%3E" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet" />
   </head>
   <body>
     <div id="app">
-      <!-- ───────────── 시작 화면 ───────────── -->
+      <!-- ───────────── 시작 ───────────── -->
       <section id="home" class="screen active">
-        <header class="home-head">
-          <h1>엔진 시뮬레이터</h1>
-          <p>무엇을 해 볼까요?</p>
-        </header>
-        <div class="home-modes">
-          <button class="mode-card" id="modeEngine">
-            <svg viewBox="0 0 64 64" aria-hidden="true"><rect x="20" y="8" width="24" height="26" rx="4" fill="none" stroke="currentColor" stroke-width="3"/><rect x="24" y="18" width="16" height="10" rx="2" fill="currentColor"/><path d="M32 28v14" stroke="currentColor" stroke-width="3"/><circle cx="32" cy="48" r="9" fill="none" stroke="currentColor" stroke-width="3"/><circle cx="32" cy="42" r="2.5" fill="currentColor"/></svg>
-            <div>
-              <b>엔진 시뮬레이터</b>
-              <span>엔진을 골라 시동을 걸고 페달과 변속기로 직접 운전해요</span>
-            </div>
-            <i>›</i>
-          </button>
-          <button class="mode-card" id="modeBuild">
-            <svg viewBox="0 0 64 64" aria-hidden="true"><path d="M6 40v-8l8-3 8-9h18l10 9 8 3v8z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/><circle cx="18" cy="42" r="6" fill="#1f2522" stroke="currentColor" stroke-width="3"/><circle cx="46" cy="42" r="6" fill="#1f2522" stroke="currentColor" stroke-width="3"/><path d="M25 22l-4 7h19l-6-7z" fill="currentColor" opacity="0.5"/></svg>
-            <div>
-              <b>차량 만들기</b>
-              <span>엔진 → 차체 → 휠 크기를 고르면 조건에 맞는 차 한 대가 나와요</span>
-            </div>
-            <i>›</i>
-          </button>
+        <div class="home-wrap">
+          <header class="brand">
+            <span class="brand-mark" aria-hidden="true"></span>
+            <h1>PISTON<br />LAB</h1>
+            <p>엔진을 돌려 보고, 그 엔진으로 차를 만들어 보는 작은 실험실</p>
+          </header>
+          <nav class="modes">
+            <button class="mode" id="modeEngine">
+              <span class="mode-tag">RUN</span>
+              <b>엔진 다이노</b>
+              <span class="mode-desc">엔진 하나를 골라 시동을 걸고, 스로틀·브레이크·6단 수동으로 직접 몰아 봅니다.</span>
+              <svg class="mode-go" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" /></svg>
+            </button>
+            <button class="mode" id="modeBuild">
+              <span class="mode-tag">BUILD</span>
+              <b>차량 조립</b>
+              <span class="mode-desc">엔진, 차체 구조, 휠 지름을 차례로 정하면 그 조합으로 실제 팔린 차 한 대를 찾아 줍니다.</span>
+              <svg class="mode-go" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" /></svg>
+            </button>
+          </nav>
+          <dl class="title-block">
+            <div><dt>엔진</dt><dd>8종</dd></div>
+            <div><dt>실차 데이터</dt><dd>56대</dd></div>
+            <div><dt>변속기</dt><dd>6MT</dd></div>
+            <div><dt>물리 갱신</dt><dd>480 Hz</dd></div>
+          </dl>
         </div>
-        <p class="home-foot">3D 엔진 · 물리 시뮬레이션 · 엔진 사운드</p>
       </section>
 
-      <!-- ───────────── 엔진 선택 화면 ───────────── -->
+      <!-- ───────────── 엔진 고르기 ───────────── -->
       <section id="select" class="screen">
-        <header class="sel-head">
-          <button class="head-back" id="selBack" aria-label="처음으로"><svg viewBox="0 0 24 24" width="20" height="20"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" /></svg></button>
-          <div>
-            <span class="step" id="selStep" hidden>1/3 · 엔진</span>
-            <h1 id="selTitle">엔진 시뮬레이터</h1>
+        <header class="topbar">
+          <button class="icon-btn" id="selBack" aria-label="처음으로"><svg viewBox="0 0 24 24"><path d="M19 12H6M11 6l-6 6 6 6" /></svg></button>
+          <div class="bar-title">
+            <span class="step" id="selStep" hidden>STEP 1 / 3</span>
+            <h1 id="selTitle">엔진 다이노</h1>
             <p id="selSub">엔진을 고르고 시동을 걸어 보세요</p>
           </div>
         </header>
-        <div class="preview" id="preview">
-          <div class="preview-overlay">
+        <div class="stage" id="preview">
+          <div class="stage-label">
             <div class="pv-code" id="pvCode">I4</div>
             <div class="pv-name" id="pvName"></div>
             <div class="pv-spec" id="pvSpec"></div>
           </div>
-          <div class="vp-hint">끌어서 돌려 보세요</div>
         </div>
         <div class="engine-list" id="engineList" role="listbox" aria-label="엔진 목록"></div>
-        <div class="sel-footer">
-          <button id="goBtn" class="primary">이 엔진으로 시작하기</button>
+        <div class="foot">
+          <button id="goBtn" class="primary">이 엔진으로 시작</button>
         </div>
       </section>
 
-      <!-- ───────────── 차체 선택 ───────────── -->
+      <!-- ───────────── 차체 구조 ───────────── -->
       <section id="chassis" class="screen wiz">
-        <header class="sel-head">
-          <button class="head-back" data-back="select" aria-label="엔진 선택으로"><svg viewBox="0 0 24 24" width="20" height="20"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" /></svg></button>
-          <div>
-            <span class="step">2/3 · 차체</span>
-            <h1>차체 구조를 고르세요</h1>
+        <header class="topbar">
+          <button class="icon-btn" data-back="select" aria-label="엔진 고르기로"><svg viewBox="0 0 24 24"><path d="M19 12H6M11 6l-6 6 6 6" /></svg></button>
+          <div class="bar-title">
+            <span class="step">STEP 2 / 3</span>
+            <h1>차체 구조</h1>
             <p id="chassisSub"></p>
           </div>
         </header>
+        <div class="progress" aria-hidden="true"><i class="on"></i><i class="on"></i><i></i></div>
         <div class="wiz-body" id="chassisList"></div>
-        <div class="sel-footer">
-          <button class="primary" id="chassisNext">다음: 휠 크기 고르기</button>
+        <div class="foot">
+          <button class="primary" id="chassisNext">다음: 휠 지름</button>
         </div>
       </section>
 
-      <!-- ───────────── 휠 크기 선택 ───────────── -->
+      <!-- ───────────── 휠 지름 ───────────── -->
       <section id="wheel" class="screen wiz">
-        <header class="sel-head">
-          <button class="head-back" data-back="chassis" aria-label="차체 선택으로"><svg viewBox="0 0 24 24" width="20" height="20"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" /></svg></button>
-          <div>
-            <span class="step">3/3 · 휠</span>
-            <h1>휠 크기를 고르세요</h1>
+        <header class="topbar">
+          <button class="icon-btn" data-back="chassis" aria-label="차체 구조로"><svg viewBox="0 0 24 24"><path d="M19 12H6M11 6l-6 6 6 6" /></svg></button>
+          <div class="bar-title">
+            <span class="step">STEP 3 / 3</span>
+            <h1>휠 지름</h1>
             <p id="wheelSub"></p>
           </div>
         </header>
+        <div class="progress" aria-hidden="true"><i class="on"></i><i class="on"></i><i class="on"></i></div>
         <div class="wiz-body">
-          <div class="wheel-grid" id="wheelList" role="listbox" aria-label="휠 크기"></div>
-          <p class="wiz-note">대표 차종은 해당 크기를 기본 또는 상위 트림에 쓰는 예시예요. 트림과 연식에 따라 달라요.</p>
+          <div class="wheel-grid" id="wheelList" role="listbox" aria-label="휠 지름"></div>
+          <p class="wiz-note">예시 차종은 해당 지름을 기본 또는 상위 트림에 쓰는 차예요. 트림과 연식에 따라 다를 수 있어요.</p>
         </div>
-        <div class="sel-footer">
-          <button class="primary" id="buildBtn">차 만들기</button>
+        <div class="foot">
+          <button class="primary" id="buildBtn">조립하기</button>
         </div>
       </section>
 
-      <!-- ───────────── 완성된 차 ───────────── -->
+      <!-- ───────────── 조립 결과 ───────────── -->
       <section id="result" class="screen">
-        <div class="preview" id="carStage">
-          <button class="chip back" data-back="wheel"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" /></svg> 휠 다시 고르기</button>
-          <div class="preview-overlay result-overlay">
-            <div class="pv-code" id="carType"></div>
-            <div class="pv-name" id="carName"></div>
-            <div class="pv-spec" id="carSub"></div>
+        <header class="topbar">
+          <button class="icon-btn" data-back="wheel" aria-label="휠 지름으로"><svg viewBox="0 0 24 24"><path d="M19 12H6M11 6l-6 6 6 6" /></svg></button>
+          <div class="bar-title">
+            <span class="step" id="carType"></span>
+            <h1 id="carName"></h1>
+            <p id="carSub"></p>
           </div>
-          <div class="vp-hint">끌어서 회전 · 핀치로 확대</div>
+        </header>
+        <div class="stage" id="carStage">
           <div class="model-credit" id="modelCredit" hidden></div>
         </div>
         <div class="result-panel">
           <div class="alts" id="carAlts" hidden></div>
           <dl class="spec-grid" id="carSpecs"></dl>
-          <p class="spec-note" id="specNote">외형은 실제 차의 치수와 차체 형태를 따라 단순화한 모델이에요. 성능은 선택한 엔진을 이 차의 무게와 타이어로 시뮬레이션한 추정치예요.</p>
           <div class="paint-row" id="paintRow">
-            <span>색상</span>
+            <span>도장</span>
             <div class="swatches" id="swatches"></div>
           </div>
+          <p class="spec-note" id="specNote"></p>
           <div class="result-actions">
             <button class="ghost" id="restartBtn">처음으로</button>
-            <button class="primary" id="driveBtn">이 차로 운전하기</button>
+            <button class="primary" id="driveBtn">이 차로 주행</button>
           </div>
         </div>
       </section>
 
-      <!-- ───────────── 시뮬레이터 화면 ───────────── -->
+      <!-- ───────────── 다이노 ───────────── -->
       <section id="sim" class="screen">
+        <header class="topbar sim-bar">
+          <button class="icon-btn" id="backBtn" aria-label="뒤로"><svg viewBox="0 0 24 24"><path d="M19 12H6M11 6l-6 6 6 6" /></svg><span id="backLabel" class="sr-only">엔진 고르기</span></button>
+          <div class="bar-title">
+            <h1 id="engName"></h1>
+            <p id="engSub"></p>
+          </div>
+          <button class="icon-btn" id="settingsBtn" aria-label="설정"><svg viewBox="0 0 24 24"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1" /><circle cx="15" cy="6" r="2" /><circle cx="9" cy="12" r="2" /><circle cx="17" cy="18" r="2" /></svg></button>
+        </header>
+
         <div class="viewport" id="viewport">
-          <button class="chip back" id="backBtn" aria-label="엔진 선택으로">
-            <svg viewBox="0 0 24 24" width="18" height="18"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" /></svg><span id="backLabel">엔진 선택</span>
-          </button>
-          <button class="chip slow" id="slowBtn" aria-pressed="false">슬로모션</button>
-          <button class="chip model-toggle" id="modelToggle" hidden>차량 보기</button>
+          <button class="tag-btn" id="modelToggle" hidden>차량 보기</button>
+          <div class="vp-tools">
+            <button class="tool" id="viewBtn" aria-label="시점 바꾸기">사선</button>
+            <button class="tool" id="slowBtn" aria-pressed="false" aria-label="슬로모션"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8" /><path d="M12 9v4l3 2M9 2h6" /></svg></button>
+            <button class="tool" id="fullBtn" aria-label="전체 화면"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg></button>
+          </div>
           <div class="hud" id="hud"></div>
-          <div class="vp-hint">끌어서 회전 · 핀치로 확대</div>
-          <button class="vp-view" id="viewBtn">사선</button>
-          <button class="vp-full" id="fullBtn" aria-label="전체 화면">
-            <svg viewBox="0 0 24 24" width="26" height="26"><path d="M14 4h6v6M20 4l-7 7M10 20H4v-6M4 20l7-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
-          </button>
         </div>
 
         <div class="panel">
-          <div class="row info">
-            <div class="tacho-wrap"><canvas id="tacho"></canvas></div>
-            <div class="info-right">
-              <div class="eng-name" id="engName"></div>
-              <div class="eng-sub" id="engSub"></div>
-              <div class="gear-speed">
-                <div class="gear-big" id="gearBig">N</div>
-                <div class="speed">
-                  <span id="speedVal">0</span><small id="speedUnit">km/h</small>
-                </div>
+          <div class="telemetry">
+            <canvas id="tacho" aria-hidden="true"></canvas>
+            <div class="readouts">
+              <div class="ro">
+                <span class="ro-k">RPM</span>
+                <span class="ro-v" id="rpmVal">0</span>
               </div>
-              <div class="status"><i id="statusDot"></i><span id="statusText">꺼짐</span></div>
-              <button id="powerBtn" class="power">
-                <svg viewBox="0 0 24 24" width="24" height="24"><path d="M12 3v8M7.1 6.5a7.5 7.5 0 1 0 9.8 0" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" /></svg>
-                <span id="powerLabel">시동</span>
-              </button>
+              <div class="ro ro-gear">
+                <span class="ro-k">GEAR</span>
+                <span class="ro-v" id="gearBig">N</span>
+              </div>
+              <div class="ro ro-speed">
+                <span class="ro-k" id="speedUnit">km/h</span>
+                <span class="ro-v" id="speedVal">0</span>
+              </div>
             </div>
           </div>
 
-          <div class="row controls">
-            <div class="box shifter-box">
-              <div class="box-head"><span>변속기</span><b id="gearName">중립</b></div>
+          <div class="ignition">
+            <button id="powerBtn" class="ign" role="switch" aria-checked="false">
+              <span class="ign-track"><span class="ign-thumb"></span></span>
+              <span class="ign-text"><small>IGNITION</small><span id="powerLabel">시동 걸기</span></span>
+            </button>
+            <div class="status"><i id="statusDot"></i><span id="statusText">꺼짐</span></div>
+          </div>
+
+          <div class="deck">
+            <div class="rail brake" id="brakePedal">
+              <span class="rail-k">BRAKE</span>
+              <div class="pedal-area">
+                <div class="pedal-bar"><i></i></div>
+                <div class="pedal"></div>
+              </div>
+              <span class="pedal-value">0%</span>
+            </div>
+            <div class="shifter-box">
+              <div class="shifter-head"><span>기어</span><b id="gearName">중립</b></div>
               <div class="shifter" id="shifter"></div>
             </div>
-            <div class="box pedal-well" id="brakePedal">
-              <div class="box-head center"><span>브레이크</span></div>
+            <div class="rail accel" id="accelPedal">
+              <span class="rail-k">THROTTLE</span>
               <div class="pedal-area">
-                <div class="pedal"><i></i><i></i><i></i><i></i></div>
-                <div class="pedal-value">0%</div>
+                <div class="pedal-bar"><i></i></div>
+                <div class="pedal"></div>
               </div>
-              <div class="pedal-bar"><i></i></div>
-            </div>
-            <div class="box pedal-well accel" id="accelPedal">
-              <div class="box-head center"><span>액셀</span></div>
-              <div class="pedal-area">
-                <div class="pedal tall"><i></i><i></i><i></i><i></i><i></i></div>
-                <div class="pedal-value">0%</div>
-              </div>
-              <div class="pedal-bar"><i></i></div>
+              <span class="pedal-value">0%</span>
             </div>
           </div>
-
-          <button class="settings-bar" id="settingsBtn">
-            <svg viewBox="0 0 24 24" width="24" height="24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8M4 12h2M10 12h10" stroke="currentColor" stroke-width="2" stroke-linecap="round" /><circle cx="16" cy="7" r="2" fill="none" stroke="currentColor" stroke-width="2" /><circle cx="10" cy="17" r="2" fill="none" stroke="currentColor" stroke-width="2" /><circle cx="8" cy="12" r="2" fill="none" stroke="currentColor" stroke-width="2" /></svg>
-            <span>설정</span>
-            <em>사운드 · 보기 · 단위</em>
-            <svg viewBox="0 0 24 24" width="18" height="18"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" /></svg>
-          </button>
         </div>
       </section>
 
-      <!-- ───────────── 설정 시트 ───────────── -->
+      <!-- ───────────── 설정 ───────────── -->
       <div class="sheet-backdrop" id="sheetBackdrop"></div>
-      <div class="sheet" id="sheet" role="dialog" aria-label="설정">
-        <div class="sheet-grip"></div>
-        <h2>설정</h2>
+      <aside class="sheet" id="sheet" role="dialog" aria-label="설정">
+        <header class="sheet-head">
+          <h2>설정</h2>
+          <button class="icon-btn" id="sheetClose" aria-label="닫기"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" /></svg></button>
+        </header>
         <label class="field">
-          <span>엔진 소리</span>
+          <span>엔진 소리 크기</span>
           <input type="range" id="volume" min="0" max="1" step="0.01" />
         </label>
         <label class="field toggle">
-          <span>음소거</span>
+          <span>소리 끄기</span>
           <input type="checkbox" id="mute" />
         </label>
         <label class="field toggle">
-          <span>슬로모션 (엔진 움직임을 느리게)</span>
+          <span>슬로모션 (3D 움직임만 느리게)</span>
           <input type="checkbox" id="slowToggle" />
         </label>
         <label class="field toggle">
-          <span>자동 회전</span>
+          <span>3D 자동 회전</span>
           <input type="checkbox" id="autoRotate" />
         </label>
         <div class="field">
@@ -222,17 +236,16 @@
             <button data-unit="mph">mph</button>
           </div>
         </div>
-        <div class="keys">
-          <b>키보드</b>
-          <span><kbd>↑</kbd>/<kbd>W</kbd> 액셀</span>
-          <span><kbd>↓</kbd>/<kbd>S</kbd>/<kbd>Space</kbd> 브레이크</span>
-          <span><kbd>1</kbd>–<kbd>6</kbd>, <kbd>R</kbd>, <kbd>N</kbd> 기어</span>
-          <span><kbd>X</kbd>/<kbd>Z</kbd> 업/다운 시프트</span>
-          <span><kbd>E</kbd> 시동 켜기/끄기</span>
-        </div>
-        <p class="note">클러치는 자동으로 작동해요. 기어를 넣고 액셀을 밟으면 반클러치로 출발합니다.</p>
-        <button class="primary" id="sheetClose">닫기</button>
-      </div>
+        <table class="keys">
+          <caption>키보드</caption>
+          <tr><td><kbd>W</kbd> <kbd>↑</kbd></td><td>스로틀</td></tr>
+          <tr><td><kbd>S</kbd> <kbd>↓</kbd> <kbd>Space</kbd></td><td>브레이크</td></tr>
+          <tr><td><kbd>1</kbd>–<kbd>6</kbd> <kbd>R</kbd> <kbd>N</kbd></td><td>기어 선택</td></tr>
+          <tr><td><kbd>X</kbd> <kbd>Z</kbd></td><td>한 단 올림 / 내림</td></tr>
+          <tr><td><kbd>E</kbd></td><td>시동 켜기 / 끄기</td></tr>
+        </table>
+        <p class="note">클러치는 자동이에요. 기어를 넣은 채 스로틀을 열면 반클러치로 출발해요.</p>
+      </aside>
 
       <div class="toast" id="toast" role="status" aria-live="polite"></div>
     </div>

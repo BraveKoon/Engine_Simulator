@@ -3,7 +3,7 @@ import { ENGINES, peakPower } from './engines.js';
 import { Simulator } from './physics.js';
 import { EngineView } from './engine3d.js';
 import { EngineAudio } from './audio.js';
-import { Tachometer } from './ui/gauge.js';
+import { RpmBar } from './ui/gauge.js';
 import { Pedal, HShifter } from './ui/controls.js';
 import { CHASSIS, WHEELS, PAINT_SWATCHES, buildCar, tyreFor, carsFor } from './car/catalog.js';
 import { makeCarModel, CAR_MODELS, GlbCarModel } from './car/glbCar.js';
@@ -31,7 +31,7 @@ const view = new EngineView();
 const audio = new EngineAudio();
 audio.volume = settings.volume;
 audio.muted = settings.mute;
-const tacho = new Tachometer($('tacho'));
+const tacho = new RpmBar($('tacho'));
 let sim = null;
 let screen = 'home';
 let mode = 'engine'; // 'engine' = plain simulator, 'build' = car builder
@@ -50,10 +50,10 @@ function layoutIcon(e) {
   const banks = [...new Set(e.cylinders.map((c) => c.bank))].sort((a, b) => a - b);
   const parts = banks
     .map((b) => {
-      return `<g transform="rotate(${b} 23 30)"><rect x="17.5" y="4" width="11" height="17" rx="2.5" fill="currentColor" opacity="0.9"/><rect x="19" y="9" width="8" height="4" rx="1" fill="#1f2522"/></g>`;
+      return `<g transform="rotate(${b} 23 30)"><rect x="18" y="5" width="10" height="16" class="li-bore"/><path d="M23 21v4" class="li-rod"/></g>`;
     })
     .join('');
-  return `<svg viewBox="0 0 46 46" style="color:${e.accent}">${parts}<circle cx="23" cy="30" r="6" fill="none" stroke="#c9ccc8" stroke-width="2.4"/><circle cx="23" cy="30" r="1.8" fill="#c9ccc8"/></svg>`;
+  return `<svg viewBox="0 0 46 46" class="layout-icon" aria-hidden="true">${parts}<circle cx="23" cy="30" r="5.5" class="li-crank"/></svg>`;
 }
 
 function specLine(e) {
@@ -71,7 +71,7 @@ function buildList() {
     b.setAttribute('role', 'option');
     b.dataset.id = e.id;
     const s = specLine(e);
-    b.innerHTML = `${layoutIcon(e)}<div><b>${e.code} <span style="font-weight:500;color:#aeb5b0;font-size:13px">${e.short}</span></b><small>${e.displacement.toFixed(1)}L ${s.asp}<br>${s.p.ps}마력 · ${(e.redline / 1000).toFixed(1)}k rpm</small></div>`;
+    b.innerHTML = `${layoutIcon(e)}<span class="ec-id"><b>${e.code}</b><small>${e.short} · ${s.asp}</small></span><span class="ec-n">${e.displacement.toFixed(1)}<small>L</small></span><span class="ec-n">${s.p.ps}<small>ps</small></span><span class="ec-n">${(e.redline / 1000).toFixed(1)}<small>k</small></span>`;
     b.addEventListener('click', () => selectEngine(e));
     b.addEventListener('dblclick', () => startSim());
     list.appendChild(b);
@@ -111,9 +111,9 @@ function openSelect(m, reset = true) {
   mode = m;
   const b = m === 'build';
   $('selStep').hidden = !b;
-  $('selTitle').textContent = b ? '엔진을 고르세요' : '엔진 시뮬레이터';
-  $('selSub').textContent = b ? '차에 얹을 엔진부터 골라요' : '엔진을 고르고 시동을 걸어 보세요';
-  $('goBtn').textContent = b ? '다음: 차체 고르기' : '이 엔진으로 시작하기';
+  $('selTitle').textContent = b ? '엔진' : '엔진 다이노';
+  $('selSub').textContent = b ? '차에 얹을 엔진부터 정해요' : '엔진을 고르고 시동을 걸어 보세요';
+  $('goBtn').textContent = b ? '다음: 차체 구조' : '이 엔진으로 시작';
   show('select');
   view.mount($('preview'));
   view.controls.autoRotate = true;
@@ -128,8 +128,8 @@ $('goBtn').addEventListener('click', () => {
 
 // ───────── Car builder: chassis ─────────
 const CHASSIS_ART = {
-  mono: `<svg viewBox="0 0 320 120"><path d="M30 86 L42 64 L96 58 L128 34 L214 32 L250 58 L292 66 L296 86 Z" fill="rgba(234,219,194,0.16)" stroke="#eadbc2" stroke-width="3" stroke-linejoin="round"/><path d="M96 58 L250 58 M128 34 L118 86 M170 33 L170 86 M214 32 L226 86 M42 70 L292 72" stroke="#eadbc2" stroke-width="2" opacity="0.55"/><circle cx="78" cy="88" r="17" fill="#171b19" stroke="#9ea7a1" stroke-width="5"/><circle cx="248" cy="88" r="17" fill="#171b19" stroke="#9ea7a1" stroke-width="5"/><text x="160" y="112" fill="#9ea7a1" font-size="11" text-anchor="middle" font-family="sans-serif">차체 = 뼈대 (한 덩어리)</text></svg>`,
-  frame: `<svg viewBox="0 0 320 120"><path d="M34 70 L40 44 L100 40 L118 18 L208 18 L220 40 L290 44 L294 70 Z" fill="none" stroke="#9ea7a1" stroke-width="2.5" stroke-dasharray="5 4" stroke-linejoin="round"/><rect x="26" y="78" width="276" height="9" rx="2" fill="#eadbc2"/><path d="M48 76 v12 M96 76 v12 M146 76 v12 M196 76 v12 M246 76 v12 M286 76 v12" stroke="#1f2522" stroke-width="3"/><circle cx="76" cy="90" r="19" fill="#171b19" stroke="#9ea7a1" stroke-width="5"/><circle cx="250" cy="90" r="19" fill="#171b19" stroke="#9ea7a1" stroke-width="5"/><text x="160" y="114" fill="#9ea7a1" font-size="11" text-anchor="middle" font-family="sans-serif">사다리 프레임 위에 차체를 얹음</text></svg>`,
+  mono: `<svg viewBox="0 0 320 134" class="ch-art"><path d="M30 86 L42 64 L96 58 L128 34 L214 32 L250 58 L292 66 L296 86 Z" class="a-body"/><path d="M96 58 L250 58 M128 34 L118 86 M170 33 L170 86 M214 32 L226 86 M42 70 L292 72" class="a-cage"/><circle cx="78" cy="88" r="16" class="a-tyre"/><circle cx="248" cy="88" r="16" class="a-tyre"/><text x="160" y="128" class="a-cap">차체가 곧 뼈대 · 한 덩어리 구조</text></svg>`,
+  frame: `<svg viewBox="0 0 320 134" class="ch-art"><path d="M34 70 L40 44 L100 40 L118 18 L208 18 L220 40 L290 44 L294 70 Z" class="a-ghost"/><rect x="26" y="77" width="276" height="9" class="a-frame"/><path d="M48 75 v13 M96 75 v13 M146 75 v13 M196 75 v13 M246 75 v13 M286 75 v13" class="a-rung"/><circle cx="76" cy="90" r="18" class="a-tyre"/><circle cx="250" cy="90" r="18" class="a-tyre"/><text x="160" y="130" class="a-cap">사다리 프레임 위에 차체를 볼트로 얹음</text></svg>`,
 };
 
 function openChassis() {
@@ -151,8 +151,8 @@ function openChassis() {
       <div class="con"><b>단점</b><ul>${c.cons.map((x) => `<li>${x}</li>`).join('')}</ul></div></div>
       ${
         matches.length
-          ? `<div class="ex">${selected.code} + ${c.name} 실제 차: <em>${matches.slice(0, 4).map((m) => m.name).join(' · ')}${matches.length > 4 ? ` 외 ${matches.length - 4}대` : ''}</em></div>`
-          : `<div class="ex none">${selected.code} 엔진을 얹은 ${c.name} 양산차가 없어서 고를 수 없어요</div>`
+          ? `<div class="ex"><span>실제 차</span><em>${matches.slice(0, 4).map((m) => m.name).join(' · ')}${matches.length > 4 ? ` 외 ${matches.length - 4}대` : ''}</em></div>`
+          : `<div class="ex none">${selected.code} 엔진을 얹은 ${c.name} 양산차가 없어 고를 수 없어요</div>`
       }`;
     b.addEventListener('click', () => {
       build.chassis = c.id;
@@ -177,7 +177,7 @@ $('chassisNext').addEventListener('click', () => openWheels());
 // ───────── Car builder: wheels ─────────
 function openWheels() {
   const ch = CHASSIS.find((c) => c.id === build.chassis);
-  $('wheelSub').textContent = `${selected.code} 엔진 · ${ch.name} · 흐린 크기는 해당하는 실제 차가 없어요`;
+  $('wheelSub').textContent = `${selected.code} · ${ch.name} · 빗금 친 지름은 맞는 실제 차가 없어요`;
   const list = $('wheelList');
   list.innerHTML = '';
   const okInch = (inch) => carsFor(selected.id, build.chassis, inch).length > 0;
@@ -191,11 +191,11 @@ function openWheels() {
     b.setAttribute('role', 'option');
     b.disabled = matches.length === 0;
     b.innerHTML = `<div class="wheel-img"><img alt="${w.inch}인치 휠" /></div>
-      <div class="w-inch">${w.inch}인치<small>${tyre.label}</small></div>
+      <div class="w-inch">${w.inch}<span>″</span><small>${tyre.label}</small></div>
       ${
         matches.length
           ? `<ul>${matches.slice(0, 3).map((c) => `<li>${c.name}</li>`).join('')}</ul>`
-          : '<p class="none">이 조건의 양산차 없음</p>'
+          : '<p class="none">맞는 양산차 없음</p>'
       }`;
     b.addEventListener('click', () => {
       build.inch = w.inch;
@@ -366,12 +366,12 @@ async function startSim(withCar = null) {
   view.controls.autoRotate = settings.autoRotate;
   showCar = false;
   $('modelToggle').hidden = !withCar;
-  $('backLabel').textContent = withCar ? '차량' : '엔진 선택';
+  $('backLabel').textContent = withCar ? '조립 결과로' : '엔진 고르기로';
+  $('backBtn').setAttribute('aria-label', $('backLabel').textContent);
   setSimModel();
   wheelAngle = 0;
   tacho.configure(e.redline);
   shifter.reset();
-  $('engName').textContent = e.name.replace(/\s/g, ' ');
   $('engName').textContent = withCar ? withCar.name : e.name;
   $('engSub').textContent = withCar
     ? `${withCar.typeName} · ${withCar.mass.toLocaleString('en-US')}kg · ${withCar.tyre.label}`
@@ -580,19 +580,21 @@ function updateInfo() {
   let text = '꺼짐';
   if (sim.starting) {
     cls = 'crank';
-    text = '크랭킹…';
+    text = '시동 중…';
   } else if (sim.running && sim.limiter) {
     cls = 'limit';
-    text = '레브 리미터';
+    text = '리미터 작동';
   } else if (sim.running) {
     cls = 'on';
-    text = sim.rpm < sim.e.idle * 1.15 && sim.throttle < 0.02 ? '공회전' : '작동 중';
+    text = sim.rpm < sim.e.idle * 1.15 && sim.throttle < 0.02 ? '아이들' : '구동 중';
   }
   statusDot.className = cls;
   $('statusText').textContent = text;
+  $('rpmVal').textContent = Math.round(sim.rpm).toLocaleString('en-US');
   const on = sim.running || sim.starting;
   $('powerBtn').classList.toggle('on', on);
-  $('powerLabel').textContent = on ? '정지' : '시동';
+  $('powerBtn').setAttribute('aria-checked', String(on));
+  $('powerLabel').textContent = on ? '시동 끄기' : '시동 걸기';
   $('hud').textContent = `${gearLetter(g)}  ·  ${Math.round(sim.rpm).toLocaleString('en-US')} rpm  ·  ${Math.round(spd)} ${settings.unit === 'mph' ? 'mph' : 'km/h'}`;
 }
 

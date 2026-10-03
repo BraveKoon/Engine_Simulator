@@ -976,8 +976,16 @@ export class EngineView {
     this.canvas.className = 'engine-canvas';
 
     this.scene = new THREE.Scene();
-    this.bg = new THREE.Color(0xf1efea);
+    this.bg = new THREE.Color(0xdde2e8);
     this.scene.background = this.bg;
+    // drafting-table floor grid that fades into the background
+    this.grid = new THREE.GridHelper(60, 120, 0xffffff, 0xffffff);
+    this.grid.material.transparent = true;
+    this.grid.material.opacity = 0.55;
+    this.grid.material.depthWrite = false;
+    this.grid.position.y = 0.001;
+    this.scene.add(this.grid);
+    this.scene.fog = new THREE.Fog(0xdde2e8, 14, 34);
     const pmrem = new THREE.PMREMGenerator(this.renderer);
     this.scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
     this.scene.environmentIntensity = 0.75;
@@ -1009,6 +1017,9 @@ export class EngineView {
     this.ground.rotation.x = -Math.PI / 2;
     this.ground.receiveShadow = true;
     this.scene.add(this.ground);
+    this.applyTheme();
+    window.matchMedia?.('(prefers-color-scheme: dark)').addEventListener?.('change', () => this.applyTheme());
+    new MutationObserver(() => this.applyTheme()).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 
     this.controls = new OrbitControls(this.camera, this.canvas);
     this.controls.enableDamping = true;
@@ -1026,6 +1037,23 @@ export class EngineView {
     this.container = null;
     this.ro = new ResizeObserver(() => this.resize());
     this.tween = null;
+  }
+
+  /** Take the stage colours from the page's CSS tokens (light / dark theme). */
+  applyTheme() {
+    const css = getComputedStyle(document.documentElement);
+    const get = (n, d) => css.getPropertyValue(n).trim() || d;
+    const stage = new THREE.Color(get('--stage', '#dde2e8'));
+    this.bg.copy(stage);
+    this.scene.fog.color.copy(stage);
+    const dark = stage.getHSL({}).l < 0.4;
+    const mats = Array.isArray(this.grid.material) ? this.grid.material : [this.grid.material];
+    const line = new THREE.Color(get('--rule', '#c3cbd6'));
+    for (const m of mats) {
+      m.color.copy(line);
+      m.opacity = dark ? 0.8 : 0.9;
+    }
+    this.ground.material.opacity = dark ? 0.4 : 0.18;
   }
 
   mount(container) {
@@ -1141,6 +1169,10 @@ export class EngineView {
     }
     if (this.model) this.model.update(theta, rpm, state);
     this.controls.update(dt);
+    // fade the floor grid out beyond the subject, whatever the zoom
+    const d = this.camera.position.distanceTo(this.controls.target);
+    this.scene.fog.near = d * 1.35;
+    this.scene.fog.far = d * 3;
     this.renderer.render(this.scene, this.camera);
   }
 }

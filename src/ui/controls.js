@@ -1,6 +1,6 @@
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
-/** Touch/mouse pedal: pressing higher on the pedal = more input. */
+/** Touch/mouse pedal rail: the higher you press on the rail, the more input. */
 export class Pedal {
   constructor(root, onChange) {
     this.root = root;
@@ -17,7 +17,7 @@ export class Pedal {
     const fromEvent = (ev) => {
       const r = area.getBoundingClientRect();
       const t = (r.bottom - ev.clientY) / r.height;
-      return clamp(0.1 + t * 1.05, 0.1, 1);
+      return clamp(t * 1.08, 0.06, 1);
     };
     area.addEventListener('pointerdown', (ev) => {
       ev.preventDefault();
@@ -60,7 +60,7 @@ export class Pedal {
     const pct = Math.round(v * 100);
     this.valueEl.textContent = `${pct}%`;
     this.bar.style.transform = `scaleY(${v})`;
-    this.pad.style.transform = `perspective(420px) rotateX(${v * 24}deg) translateY(${v * 5}px)`;
+    this.root.style.setProperty('--v', v.toFixed(3));
   }
 }
 
@@ -93,7 +93,7 @@ export class HShifter {
     root.appendChild(this.svg);
     this.knob = document.createElement('div');
     this.knob.className = 'knob';
-    this.knob.innerHTML = '<span></span>';
+    this.knob.innerHTML = '<span>N</span>';
     root.appendChild(this.knob);
     this.labels = [];
     for (const s of SLOTS) {
@@ -140,16 +140,17 @@ export class HShifter {
     this.W = W;
     this.H = H;
     this.sx = W / 4.3;
-    this.sy = H * 0.36;
+    this.sy = H * 0.28;
     const px = (x) => W / 2 + x * this.sx;
     const py = (y) => H / 2 + y * this.sy;
     this.svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
     let d = `M${px(COLS[0])},${py(0)} L${px(COLS[3])},${py(0)}`;
     for (const s of SLOTS) d += ` M${px(COLS[s.col])},${py(0)} L${px(COLS[s.col])},${py(s.dir)}`;
-    this.svg.innerHTML = `<path d="${d}" class="gate-slot-outer"/><path d="${d}" class="gate-slot"/>`;
+    const ends = SLOTS.map((s) => `<circle cx="${px(COLS[s.col])}" cy="${py(s.dir)}" r="3" class="gate-end"/>`).join('');
+    this.svg.innerHTML = `<path d="${d}" class="gate-slot-outer"/><path d="${d}" class="gate-slot"/>${ends}`;
     for (const { el, s } of this.labels) {
       el.style.left = `${px(COLS[s.col])}px`;
-      el.style.top = `${py(s.dir * 1.02)}px`;
+      el.style.top = `${py(s.dir) + s.dir * 26}px`;
     }
     this.place();
   }
@@ -230,6 +231,7 @@ export class HShifter {
 
   highlight() {
     for (const { el, s } of this.labels) el.classList.toggle('active', s.gear === this.gear);
+    this.knob.firstChild.textContent = SLOTS.find((s) => s.gear === this.gear)?.label ?? 'N';
   }
 
   place() {
