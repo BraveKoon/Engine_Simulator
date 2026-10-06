@@ -30,7 +30,12 @@ class EngineProc extends AudioWorkletProcessor {
     this.whine = 0; this.starterPh = 0; this.noiseLp = 0; this.counter = 0; this.lastIdx = 0;
     this.port.onmessage = (ev) => {
       const d = ev.data;
-      if (d.type === 'engine') {
+      if (d.type === 'engine' && d.electric) {
+        this.electric = true; this.pulses = []; this.events = [];
+        this.evLp = new Biquad(); this.evLp.lowpass(2400, 0.7, sampleRate);
+        this.ph1 = 0; this.ph2 = 0; this.ph3 = 0; this.ph4 = 0;
+      } else if (d.type === 'engine') {
+        this.electric = false;
         const order = d.fire.map((f, i) => ({ f, i })).sort((a, b) => a.f - b.f);
         this.events = order.map((o) => o.f);
         this.amp = order.map((o) => 1 - (d.imbalance[o.i] || 0));
@@ -52,6 +57,33 @@ class EngineProc extends AudioWorkletProcessor {
     if (!out) return true;
     const sr = sampleRate;
     const n = this.events.length;
+    if (this.electric) {
+      for (let s = 0; s < out.length; s++) {
+        this.rpm += (this.tRpm - this.rpm) * 0.004;
+        this.load += (this.tLoad - this.load) * 0.003;
+        const f = this.rpm / 60;
+        const moving = Math.min(1, this.rpm / 400);
+        const on = this.fire ? 1 : 0;
+        // motor: pole-pass whine, reduction-gear mesh, inverter switching, soft ready hum
+        this.ph1 += 2 * Math.PI * f * 4 / sr;
+        this.ph2 += 2 * Math.PI * f * 13 / sr;
+        this.ph3 += 2 * Math.PI * (f * 1.5 + 40) / sr;
+        this.ph4 += 2 * Math.PI * (2600 + this.load * 900) / sr;
+        if (this.ph1 > 1e4) { this.ph1 %= 2 * Math.PI; this.ph2 %= 2 * Math.PI; this.ph3 %= 2 * Math.PI; this.ph4 %= 2 * Math.PI; }
+        let y = Math.sin(this.ph1) * 0.11 * (0.25 + 0.75 * this.load) * moving * on;
+        y += Math.sin(this.ph2) * 0.035 * (0.3 + this.load) * moving;
+        y += Math.sin(this.ph3) * 0.05 * (0.4 + 0.6 * this.load) * on;
+        y += Math.sin(this.ph4) * 0.012 * this.load * on;
+        // tyre / wind roar grows with speed
+        const noise = Math.random() * 2 - 1;
+        this.noiseLp += (noise - this.noiseLp) * 0.04;
+        y += this.evLp.run(this.noiseLp) * Math.min(1, f / 220) * 0.6;
+        y = Math.tanh(y * 2) * 0.7;
+        out[s] = y * this.vol;
+      }
+      for (let c = 1; c < outputs[0].length; c++) outputs[0][c].set(out);
+      return true;
+    }
     for (let s = 0; s < out.length; s++) {
       this.rpm += (this.tRpm - this.rpm) * 0.002;
       this.load += (this.tLoad - this.load) * 0.0015;
@@ -159,6 +191,10 @@ export class EngineAudio {
   setEngine(e) {
     this.pendingEngine = e;
     if (!this.ready) return;
+    if (e.electric) {
+      this.node.port.postMessage({ type: 'engine', electric: true });
+      return;
+    }
     this.node.port.postMessage({
       type: 'engine',
       fire: e.cylinders.map((c) => c.fire),
@@ -176,7 +212,7 @@ export class EngineAudio {
       rpm: sim.rpm,
       load: sim.load,
       fire: sim.running && !sim.limiter,
-      starter: sim.starting,
+      starter: sim.starting && !sim.e.electric,
       boost: sim.e.turbo ? sim.boost : 0,
       vol: this.muted ? 0 : this.volume,
     });

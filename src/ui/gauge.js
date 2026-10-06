@@ -37,8 +37,10 @@ export class RpmBar {
     this.canvas.width = w;
     this.canvas.height = h;
     this.col = { ink: css('--ink'), dim: css('--rule'), sig: css('--signal'), hot: css('--hot'), muted: css('--ink-2') };
-    // segment layout: one segment per 250 rpm
-    this.n = this.max * 4;
+    // segment layout: one segment per 250 rpm (500 rpm for electric motors)
+    this.per = this.max > 10 ? 2 : 4; // segments per 1000 rpm
+    this.n = this.max * this.per;
+    const labelEvery = this.max > 10 ? 2 : 1;
     this.pad = 2 * dpr;
     this.barH = Math.round(h * 0.6);
     this.gap = Math.max(1, Math.round(2 * dpr));
@@ -50,8 +52,8 @@ export class RpmBar {
     const c = this.bg.getContext('2d');
     c.font = `500 ${Math.round(10 * dpr)}px 'IBM Plex Mono', ui-monospace, monospace`;
     c.textBaseline = 'bottom';
-    for (let k = 0; k <= this.max; k++) {
-      const x = this.pad + (k * 4) * (this.segW + this.gap) - this.gap / 2;
+    for (let k = 0; k <= this.max; k += labelEvery) {
+      const x = this.pad + k * this.per * (this.segW + this.gap) - this.gap / 2;
       c.fillStyle = k >= this.red ? this.col.hot : this.col.muted;
       c.textAlign = k === 0 ? 'left' : k === this.max ? 'right' : 'center';
       c.fillText(String(k), Math.min(w - this.pad, Math.max(this.pad, x)), h);
@@ -60,7 +62,7 @@ export class RpmBar {
   }
 
   segColor(i) {
-    const v = (i + 1) / 4; // top of this segment in krpm
+    const v = (i + 1) / this.per; // top of this segment in krpm
     if (v > this.red) return this.col.hot;
     if (v > this.red - 1) return this.col.sig;
     return this.col.ink;
@@ -79,7 +81,7 @@ export class RpmBar {
 
     c.clearRect(0, 0, this.w, this.h);
     c.drawImage(this.bg, 0, 0);
-    const lit = this.shown * 4;
+    const lit = this.shown * this.per;
     // near the redline the whole strip flashes; on the limiter it strobes
     const shift = k > this.red - 0.3;
     const strobe = limiter && performance.now() % 140 < 70;
@@ -95,7 +97,7 @@ export class RpmBar {
       }
     }
     // peak hold
-    const pi = Math.min(this.n - 1, Math.floor(this.peak * 4 - 0.001));
+    const pi = Math.min(this.n - 1, Math.floor(this.peak * this.per - 0.001));
     if (pi > 0) {
       c.fillStyle = this.segColor(pi);
       c.fillRect(this.pad + pi * (this.segW + this.gap), 0, this.segW, 3 * this.dpr);

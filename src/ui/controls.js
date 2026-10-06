@@ -75,6 +75,12 @@ const SLOTS = [
   { col: 3, dir: -1, gear: 5, label: '5' },
   { col: 3, dir: 1, gear: 6, label: '6' },
 ];
+// Electric cars: one reduction gear, so a straight R - N - D gate.
+const EV_COLS = [0];
+const EV_SLOTS = [
+  { col: 0, dir: -1, gear: -1, label: 'R' },
+  { col: 0, dir: 1, gear: 1, label: 'D' },
+];
 const ENGAGE = 0.72;
 
 export class HShifter {
@@ -87,6 +93,27 @@ export class HShifter {
     this.dragging = null;
     this.anim = null;
 
+    this.cols = COLS;
+    this.slots = SLOTS;
+    this.build();
+    this.ro = new ResizeObserver(() => this.layout());
+    this.ro.observe(root);
+  }
+
+  /** 'manual' = 6-speed H gate, 'ev' = R / N / D. */
+  setLayout(kind) {
+    const ev = kind === 'ev';
+    if ((this.cols === EV_COLS) === ev) return;
+    this.cols = ev ? EV_COLS : COLS;
+    this.slots = ev ? EV_SLOTS : SLOTS;
+    this.root.classList.toggle('ev', ev);
+    this.build();
+    this.reset();
+    this.layout();
+  }
+
+  build() {
+    const root = this.root;
     root.innerHTML = '';
     this.svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     this.svg.classList.add('gate');
@@ -96,7 +123,7 @@ export class HShifter {
     this.knob.innerHTML = '<span>N</span>';
     root.appendChild(this.knob);
     this.labels = [];
-    for (const s of SLOTS) {
+    for (const s of this.slots) {
       const b = document.createElement('button');
       b.className = 'gate-label';
       b.textContent = s.label;
@@ -104,9 +131,6 @@ export class HShifter {
       root.appendChild(b);
       this.labels.push({ el: b, s });
     }
-
-    this.ro = new ResizeObserver(() => this.layout());
-    this.ro.observe(root);
 
     this.knob.addEventListener('pointerdown', (ev) => {
       ev.preventDefault();
@@ -144,12 +168,12 @@ export class HShifter {
     const px = (x) => W / 2 + x * this.sx;
     const py = (y) => H / 2 + y * this.sy;
     this.svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
-    let d = `M${px(COLS[0])},${py(0)} L${px(COLS[3])},${py(0)}`;
-    for (const s of SLOTS) d += ` M${px(COLS[s.col])},${py(0)} L${px(COLS[s.col])},${py(s.dir)}`;
-    const ends = SLOTS.map((s) => `<circle cx="${px(COLS[s.col])}" cy="${py(s.dir)}" r="3" class="gate-end"/>`).join('');
+    let d = `M${px(this.cols[0])},${py(0)} L${px(this.cols[this.cols.length - 1])},${py(0)}`;
+    for (const s of this.slots) d += ` M${px(this.cols[s.col])},${py(0)} L${px(this.cols[s.col])},${py(s.dir)}`;
+    const ends = this.slots.map((s) => `<circle cx="${px(this.cols[s.col])}" cy="${py(s.dir)}" r="3" class="gate-end"/>`).join('');
     this.svg.innerHTML = `<path d="${d}" class="gate-slot-outer"/><path d="${d}" class="gate-slot"/>${ends}`;
     for (const { el, s } of this.labels) {
-      el.style.left = `${px(COLS[s.col])}px`;
+      el.style.left = `${px(this.cols[s.col])}px`;
       el.style.top = `${py(s.dir) + s.dir * 26}px`;
     }
     this.place();
@@ -162,14 +186,14 @@ export class HShifter {
 
   nearestCol(x) {
     let best = 0;
-    for (let i = 1; i < COLS.length; i++) if (Math.abs(COLS[i] - x) < Math.abs(COLS[best] - x)) best = i;
+    for (let i = 1; i < this.cols.length; i++) if (Math.abs(this.cols[i] - x) < Math.abs(this.cols[best] - x)) best = i;
     return best;
   }
 
   slotRange(col) {
     let lo = 0;
     let hi = 0;
-    for (const s of SLOTS) if (s.col === col) (s.dir < 0 ? (lo = -1) : (hi = 1));
+    for (const s of this.slots) if (s.col === col) (s.dir < 0 ? (lo = -1) : (hi = 1));
     return [lo, hi];
   }
 
@@ -180,22 +204,22 @@ export class HShifter {
         // inside a slot: only vertical travel
         const col = this.nearestCol(this.x);
         const [lo, hi] = this.slotRange(col);
-        this.x = COLS[col];
+        this.x = this.cols[col];
         this.y = clamp(ty, lo, hi);
         if (Math.abs(this.y) <= 0.04) this.y = 0;
         else break;
       } else {
         const col = this.nearestCol(this.x);
         const [lo, hi] = this.slotRange(col);
-        const wantsVertical = Math.abs(ty) > 0.12 && Math.abs(tx - COLS[col]) < 0.45;
-        if (wantsVertical && Math.abs(this.x - COLS[col]) < 0.2 && ((ty < 0 && lo < 0) || (ty > 0 && hi > 0))) {
-          this.x = COLS[col];
+        const wantsVertical = Math.abs(ty) > 0.12 && Math.abs(tx - this.cols[col]) < 0.45;
+        if (wantsVertical && Math.abs(this.x - this.cols[col]) < 0.2 && ((ty < 0 && lo < 0) || (ty > 0 && hi > 0))) {
+          this.x = this.cols[col];
           this.y = clamp(ty, lo, hi);
           continue;
         }
-        const nx = clamp(tx, COLS[0], COLS[3]);
+        const nx = clamp(tx, this.cols[0], this.cols[this.cols.length - 1]);
         // if heading to a column vertically, slide x to it first
-        if (wantsVertical) this.x = COLS[col];
+        if (wantsVertical) this.x = this.cols[col];
         else this.x = nx;
         this.y = 0;
         break;
@@ -209,7 +233,7 @@ export class HShifter {
     let g = 0;
     if (Math.abs(this.y) >= ENGAGE) {
       const col = this.nearestCol(this.x);
-      const s = SLOTS.find((q) => q.col === col && q.dir === Math.sign(this.y));
+      const s = this.slots.find((q) => q.col === col && q.dir === Math.sign(this.y));
       if (s) g = s.gear;
     }
     if (g !== this.gear) {
@@ -231,7 +255,7 @@ export class HShifter {
 
   highlight() {
     for (const { el, s } of this.labels) el.classList.toggle('active', s.gear === this.gear);
-    this.knob.firstChild.textContent = SLOTS.find((s) => s.gear === this.gear)?.label ?? 'N';
+    this.knob.firstChild.textContent = this.slots.find((s) => s.gear === this.gear)?.label ?? 'N';
   }
 
   place() {
@@ -249,7 +273,7 @@ export class HShifter {
     path.push([x, y]);
     if (toNeutral && Math.abs(this.x) > 0.01 && y === 0) {
       // spring back toward the centre of the neutral lane
-      path.push([this.x > 0 ? 0.5 : -0.5, 0]);
+      path.push([this.cols.length === 1 ? 0 : this.x > 0 ? 0.5 : -0.5, 0]);
     }
     const anim = { path, i: 0, last: performance.now() };
     this.anim = anim;
@@ -284,9 +308,9 @@ export class HShifter {
       this.animateTo(this.x, 0, true);
       return;
     }
-    const s = SLOTS.find((q) => q.gear === g);
+    const s = this.slots.find((q) => q.gear === g);
     if (!s) return;
-    this.animateTo(COLS[s.col], s.dir);
+    this.animateTo(this.cols[s.col], s.dir);
   }
 
   /** Reset to neutral without triggering callbacks. */

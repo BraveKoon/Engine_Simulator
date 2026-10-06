@@ -26,20 +26,20 @@
             <button class="mode" id="modeEngine">
               <span class="mode-tag">RUN</span>
               <b>엔진 다이노</b>
-              <span class="mode-desc">엔진 하나를 골라 시동을 걸고, 스로틀·브레이크·6단 수동으로 직접 몰아 봅니다.</span>
+              <span class="mode-desc">엔진이나 전기모터를 골라 시동을 걸고, 스로틀·브레이크·변속기로 직접 몰아 봅니다.</span>
               <svg class="mode-go" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" /></svg>
             </button>
             <button class="mode" id="modeBuild">
               <span class="mode-tag">BUILD</span>
               <b>차량 조립</b>
-              <span class="mode-desc">엔진, 차체 구조, 휠 지름을 차례로 정하면 그 조합으로 실제 팔린 차 한 대를 찾아 줍니다.</span>
+              <span class="mode-desc">엔진(또는 모터), 차체 구조, 휠 지름을 차례로 정하면 그 조합으로 실제 팔린 차 한 대를 찾아 줍니다.</span>
               <svg class="mode-go" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" /></svg>
             </button>
           </nav>
           <dl class="title-block">
-            <div><dt>엔진</dt><dd>8종</dd></div>
-            <div><dt>실차 데이터</dt><dd>56대</dd></div>
-            <div><dt>변속기</dt><dd>6MT</dd></div>
+            <div><dt>엔진</dt><dd id="statEngines">8종</dd></div>
+            <div><dt>전기 모터</dt><dd id="statMotors">3종</dd></div>
+            <div><dt>실차 데이터</dt><dd id="statCars">77대</dd></div>
             <div><dt>물리 갱신</dt><dd>480 Hz</dd></div>
           </dl>
         </div>

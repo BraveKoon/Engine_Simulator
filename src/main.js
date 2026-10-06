@@ -6,6 +6,7 @@ import { EngineAudio } from './audio.js';
 import { RpmBar } from './ui/gauge.js';
 import { Pedal, HShifter } from './ui/controls.js';
 import { CHASSIS, WHEELS, PAINT_SWATCHES, buildCar, tyreFor, carsFor } from './car/catalog.js';
+import { REAL_CARS } from './car/realCars.js';
 import { makeCarModel, CAR_MODELS, GlbCarModel } from './car/glbCar.js';
 import { wheelImage } from './car/wheelArt.js';
 
@@ -46,6 +47,11 @@ let outTheta = 0;
 
 // ───────── Selection screen ─────────
 function layoutIcon(e) {
+  if (e.electric) {
+    // stator ring with a bolt; one dot per motor
+    const dots = Array.from({ length: e.units }, (_, i) => `<circle cx="${23 + (i - (e.units - 1) / 2) * 7}" cy="42" r="2.2" class="li-dot"/>`).join('');
+    return `<svg viewBox="0 0 46 46" class="layout-icon" aria-hidden="true"><circle cx="23" cy="19" r="15" class="li-bore"/><path d="M25 8 17 21h6l-2 10 8-13h-6z" class="li-crank"/>${dots}</svg>`;
+  }
   // End-on view: crank circle with cylinders radiating at each bank angle.
   const banks = [...new Set(e.cylinders.map((c) => c.bank))].sort((a, b) => a - b);
   const parts = banks
@@ -58,6 +64,7 @@ function layoutIcon(e) {
 
 function specLine(e) {
   const p = peakPower(e);
+  if (e.electric) return { p, asp: '전기', text: `모터 ${e.units === 4 ? '3~4' : e.units}개 · ${p.ps}마력 · ${e.maxTorque}Nm` };
   const asp = e.turbo ? (e.turbo === 1 ? '터보' : `${['', '', '트윈', '', '쿼드'][e.turbo]}터보`) : '자연흡기';
   return { p, asp, text: `${e.displacement.toFixed(1)}L · ${p.ps}마력 · ${e.maxTorque}Nm` };
 }
@@ -66,12 +73,18 @@ function buildList() {
   const list = $('engineList');
   list.innerHTML = '';
   for (const e of ENGINES) {
+    if (e.electric && !list.querySelector('.list-head')) {
+      const h = document.createElement('div');
+      h.className = 'list-head';
+      h.textContent = '전기 모터';
+      list.appendChild(h);
+    }
     const b = document.createElement('button');
     b.className = 'engine-card';
     b.setAttribute('role', 'option');
     b.dataset.id = e.id;
     const s = specLine(e);
-    b.innerHTML = `${layoutIcon(e)}<span class="ec-id"><b>${e.code}</b><small>${e.short} · ${s.asp}</small></span><span class="ec-n">${e.displacement.toFixed(1)}<small>L</small></span><span class="ec-n">${s.p.ps}<small>ps</small></span><span class="ec-n">${(e.redline / 1000).toFixed(1)}<small>k</small></span>`;
+    b.innerHTML = `${layoutIcon(e)}<span class="ec-id"><b>${e.code}</b><small>${e.short} · ${s.asp}</small></span>${e.electric ? `<span class="ec-n">${e.units === 4 ? '3~4' : e.units}<small>모터</small></span>` : `<span class="ec-n">${e.displacement.toFixed(1)}<small>L</small></span>`}<span class="ec-n">${s.p.ps}<small>ps</small></span><span class="ec-n">${(e.redline / 1000).toFixed(1)}<small>k</small></span>`;
     b.addEventListener('click', () => selectEngine(e));
     b.addEventListener('dblclick', () => startSim());
     list.appendChild(b);
@@ -85,7 +98,7 @@ function selectEngine(e) {
   for (const el of document.querySelectorAll('.engine-card')) el.classList.toggle('selected', el.dataset.id === e.id);
   $('pvCode').textContent = e.code;
   $('pvName').textContent = e.name;
-  $('pvSpec').textContent = `${specLine(e).text} · ${e.count}기통`;
+  $('pvSpec').textContent = e.electric ? `${specLine(e).text} · 1단 감속기` : `${specLine(e).text} · ${e.count}기통`;
   view.setEngine(e);
 }
 
@@ -137,13 +150,13 @@ function openChassis() {
   const list = $('chassisList');
   list.innerHTML = '';
   const avail = (id) => carsFor(selected.id, id).length > 0;
-  if (!avail(build.chassis)) build.chassis = CHASSIS.find((c) => avail(c.id)).id;
+  if (!avail(build.chassis)) build.chassis = (CHASSIS.find((c) => avail(c.id)) || CHASSIS[0]).id;
   for (const c of CHASSIS) {
     const b = document.createElement('button');
     b.className = 'chassis-card';
     b.dataset.id = c.id;
     const matches = carsFor(selected.id, c.id);
-    b.disabled = matches.length === 0;
+    b.classList.toggle('virtual', matches.length === 0);
     b.innerHTML = `${CHASSIS_ART[c.id]}
       <h3>${c.name}<small>${c.en}</small></h3>
       <p>${c.desc}</p>
@@ -152,7 +165,7 @@ function openChassis() {
       ${
         matches.length
           ? `<div class="ex"><span>실제 차</span><em>${matches.slice(0, 4).map((m) => m.name).join(' · ')}${matches.length > 4 ? ` 외 ${matches.length - 4}대` : ''}</em></div>`
-          : `<div class="ex none">${selected.code} 엔진을 얹은 ${c.name} 양산차가 없어 고를 수 없어요</div>`
+          : `<div class="ex none"><span>단순화 모델</span><em>${selected.code}${selected.electric ? '' : ' 엔진'}을 얹은 ${c.name} 양산차는 없어요. 고르면 가상의 차를 단순화 모델로 만들어요</em></div>`
       }`;
     b.addEventListener('click', () => {
       build.chassis = c.id;
@@ -177,11 +190,11 @@ $('chassisNext').addEventListener('click', () => openWheels());
 // ───────── Car builder: wheels ─────────
 function openWheels() {
   const ch = CHASSIS.find((c) => c.id === build.chassis);
-  $('wheelSub').textContent = `${selected.code} · ${ch.name} · 빗금 친 지름은 맞는 실제 차가 없어요`;
+  $('wheelSub').textContent = `${selected.code} · ${ch.name} · 빗금 친 지름은 단순화 모델로만 만들 수 있어요`;
   const list = $('wheelList');
   list.innerHTML = '';
   const okInch = (inch) => carsFor(selected.id, build.chassis, inch).length > 0;
-  if (!okInch(build.inch)) build.inch = WHEELS.map((w) => w.inch).find(okInch);
+  if (!okInch(build.inch)) build.inch = WHEELS.map((w) => w.inch).find(okInch) ?? build.inch;
   WHEELS.forEach((w, i) => {
     const tyre = tyreFor(build.chassis, w.inch);
     const matches = carsFor(selected.id, build.chassis, w.inch);
@@ -189,13 +202,13 @@ function openWheels() {
     b.className = 'wheel-card';
     b.dataset.id = String(w.inch);
     b.setAttribute('role', 'option');
-    b.disabled = matches.length === 0;
+    b.classList.toggle('virtual', matches.length === 0);
     b.innerHTML = `<div class="wheel-img"><img alt="${w.inch}인치 휠" /></div>
       <div class="w-inch">${w.inch}<span>″</span><small>${tyre.label}</small></div>
       ${
         matches.length
           ? `<ul>${matches.slice(0, 3).map((c) => `<li>${c.name}</li>`).join('')}</ul>`
-          : '<p class="none">맞는 양산차 없음</p>'
+          : '<p class="none">단순화 모델로만 가능</p>'
       }`;
     b.addEventListener('click', () => {
       build.inch = w.inch;
@@ -299,7 +312,9 @@ function makeCar(real) {
   // models without a known body-paint material keep their own colours
   $('paintRow').hidden = !!credit && !credit.paint.length;
   $('carStage').classList.toggle('has-credit', !!credit);
-  $('specNote').textContent = credit
+  $('specNote').textContent = car.real.virtual
+    ? '이 조합으로 팔린 양산차는 없어서, 비슷한 차체를 바탕으로 만든 가상의 차를 단순화 모델로 보여 드려요. 성능은 선택한 파워트레인을 이 무게와 타이어로 시뮬레이션한 추정치예요.'
+    : credit
     ? '3D 모델은 아래 제작자의 모델을 실제 크기에 맞춰 표시한 거예요. 성능은 선택한 엔진을 이 차의 무게와 타이어로 시뮬레이션한 추정치예요.'
     : '외형은 실제 차의 치수와 차체 형태를 따라 단순화한 모델이에요. 성능은 선택한 엔진을 이 차의 무게와 타이어로 시뮬레이션한 추정치예요.';
   if (credit) {
@@ -314,7 +329,7 @@ function makeCar(real) {
     ['0→100 km/h', p.t100 ? `${p.t100.toFixed(1)}초` : '—', true],
     ['최고속도', `${p.vmax} km/h`, true],
     ['최고출력', `${car.power.ps}마력`, true],
-    ['엔진', `${e.displacement.toFixed(1)}L ${e.code}`],
+    e.electric ? ['모터', e.name] : ['엔진', `${e.displacement.toFixed(1)}L ${e.code}`],
     ['최대토크', `${e.maxTorque} Nm`],
     ['공차중량', `${car.mass.toLocaleString('en-US')} kg`],
     ['마력/톤', `${p.psPerTon} ps/t`],
@@ -351,7 +366,7 @@ $('driveBtn').addEventListener('click', () => startSim(car));
 
 // ───────── Simulator screen ─────────
 const GEAR_NAME = { '-1': '후진', 0: '중립' };
-const gearLetter = (g) => (g === -1 ? 'R' : g === 0 ? 'N' : String(g));
+const gearLetter = (g) => (g === -1 ? 'R' : g === 0 ? 'N' : sim?.e.electric ? 'D' : String(g));
 
 const shifter = new HShifter($('shifter'), (g) => (sim ? sim.setGear(g) : false));
 const brake = new Pedal($('brakePedal'), (v) => sim && (sim.brakeIn = v));
@@ -371,11 +386,14 @@ async function startSim(withCar = null) {
   setSimModel();
   wheelAngle = 0;
   tacho.configure(e.redline);
+  shifter.setLayout(e.electric ? 'ev' : 'manual');
   shifter.reset();
   $('engName').textContent = withCar ? withCar.name : e.name;
   $('engSub').textContent = withCar
     ? `${withCar.typeName} · ${withCar.mass.toLocaleString('en-US')}kg · ${withCar.tyre.label}`
-    : `${e.displacement.toFixed(1)}L · ${specLine(e).p.ps}마력 · 6단 수동`;
+    : e.electric
+      ? `${specLine(e).text} · 1단 감속기`
+      : `${e.displacement.toFixed(1)}L · ${specLine(e).p.ps}마력 · 6단 수동`;
   lastCrank = 0;
   // Audio must be unlocked from a user gesture.
   audio.init().then(() => audio.setEngine(e));
@@ -501,6 +519,7 @@ window.addEventListener('keydown', (ev) => {
   if (k === 'arrowup' || k === 'w') accel.setKey(1);
   else if (k === 'arrowdown' || k === 's' || k === ' ') brake.setKey(1);
   else if (k >= '1' && k <= '6') shifter.selectGear(Number(k));
+  else if (k === 'd') shifter.selectGear(1);
   else if (k === 'r') shifter.selectGear(-1);
   else if (k === 'n' || k === '0') shifter.selectGear(0);
   else if (k === 'x' && sim) shifter.selectGear(Math.min(6, Math.max(1, sim.gear + 1)));
@@ -575,18 +594,18 @@ function updateInfo() {
   const g = sim.gear;
   $('gearBig').textContent = gearLetter(g);
   $('gearBig').classList.toggle('rev', g === -1);
-  $('gearName').textContent = GEAR_NAME[g] ?? `${g}단`;
+  $('gearName').textContent = GEAR_NAME[g] ?? (sim.e.electric ? '주행' : `${g}단`);
   let cls = '';
   let text = '꺼짐';
   if (sim.starting) {
     cls = 'crank';
-    text = '시동 중…';
+    text = sim.e.electric ? '준비 중…' : '시동 중…';
   } else if (sim.running && sim.limiter) {
     cls = 'limit';
     text = '리미터 작동';
   } else if (sim.running) {
     cls = 'on';
-    text = sim.rpm < sim.e.idle * 1.15 && sim.throttle < 0.02 ? '아이들' : '구동 중';
+    text = sim.e.electric ? (sim.throttle > 0.02 && sim.gear ? '구동 중' : 'READY') : sim.rpm < sim.e.idle * 1.15 && sim.throttle < 0.02 ? '아이들' : '구동 중';
   }
   statusDot.className = cls;
   $('statusText').textContent = text;
@@ -599,6 +618,9 @@ function updateInfo() {
 }
 
 // ───────── Boot ─────────
+$('statEngines').textContent = `${ENGINES.filter((e) => !e.electric).length}종`;
+$('statMotors').textContent = `${ENGINES.filter((e) => e.electric).length}종`;
+$('statCars').textContent = `${REAL_CARS.length}대`;
 buildList();
 view.mount($('preview'));
 view.controls.autoRotate = true;

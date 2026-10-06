@@ -82,6 +82,7 @@ export class Simulator {
   /** Try to select gear g (-1 = R, 0 = N, 1..6). Returns true on success. */
   setGear(g) {
     if (g === this.gear) return true;
+    if (this.e.electric && g > 1) return false; // single reduction gear: R / N / D
     if (g === -1 && this.v > 1.5) {
       this.emit('warn', '전진 중에는 후진 기어를 넣을 수 없어요');
       return false;
@@ -99,7 +100,7 @@ export class Simulator {
 
   ratio(g = this.gear) {
     if (g === 0) return 0;
-    if (g === -1) return -3.3 * this.final;
+    if (g === -1) return (this.e.electric ? -this.e.gears[0] : -3.3) * this.final;
     return this.e.gears[g - 1] * this.final;
   }
 
@@ -174,6 +175,7 @@ export class Simulator {
   }
 
   step(dt) {
+    if (this.e.electric) return this.stepElectric(dt);
     const e = this.e;
     // Pedals ramp (hydraulic / throttle-body response)
     this.throttle += clampAbs(this.throttleIn - this.throttle, dt * 9);
@@ -266,6 +268,46 @@ export class Simulator {
     }
 
     this.crank += this.omega * dt;
+    this.distance += Math.abs(this.v) * dt;
+  }
+
+  // Electric drive: the motor is geared straight to the wheels (no clutch, no idle,
+  // cannot stall). 'Starting' is the few hundred ms it takes to get READY.
+  stepElectric(dt) {
+    const e = this.e;
+    this.throttle += clampAbs(this.throttleIn - this.throttle, dt * 12);
+    this.brake += clampAbs(this.brakeIn - this.brake, dt * 7);
+    if (this.starting) {
+      this.starterT += dt;
+      if (this.starterT > 0.6) {
+        this.starting = false;
+        this.running = true;
+        this.emit('running');
+      }
+    }
+    const m = this.mass;
+    const k = (e.gears[0] * this.final) / this.wheelR; // motor rad/s per m/s
+    const dir = this.gear === 1 ? 1 : this.gear === -1 ? -1 : 0;
+    const rpm = Math.abs(this.v) * k * RPM;
+    if (rpm > e.redline) this.limiter = true;
+    else if (rpm < e.redline - 150) this.limiter = false;
+    let T = 0;
+    if (this.running && dir && !this.limiter) T = this.throttle * e.maxTorque * torqueCurve(e, rpm);
+    // lift-off regeneration
+    const regen = this.running && dir && this.throttle < 0.05 ? 0.07 * m * G * Math.min(1, Math.abs(this.v) / 4) : 0;
+    const rolling = 0.013 * m * G;
+    const aero = 0.5 * 1.2 * this.cda * this.v * this.v;
+    const sgn = Math.abs(this.v) > 0.01 ? Math.sign(this.v) : 0;
+    const Fres = sgn * (rolling + aero + regen);
+    const Fbrake = this.brake * 1.05 * m * G;
+    const meff = m + e.inertia * k * k;
+    const a = this.vehicleAccel(dir * T * k * DRIVELINE_EFF - Fres, Fbrake, meff, dt);
+    this.v += a * dt;
+    this.omega = Math.abs(this.v) * k;
+    this.locked = dir !== 0;
+    this.clutch = dir ? 1 : 0;
+    this.load = this.running ? Math.max(this.throttle * (T > 0 ? 1 : 0), regen > 0 ? 0.15 : 0) : 0;
+    this.crank += this.v * k * dt; // motor turns backwards when reversing
     this.distance += Math.abs(this.v) * dt;
   }
 

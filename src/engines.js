@@ -195,8 +195,44 @@ export const ENGINES = [
   },
 ];
 
+// Electric drive units. One fixed reduction gear; torque is flat up to the base speed,
+// then power stays constant. Figures are for the combined motors.
+const electric = (o) => ({ electric: true, cylinders: [], turbo: 0, displacement: 0, idle: 0, lowFrac: 1, highFrac: 1, ...o });
+ENGINES.push(
+  electric({
+    id: 'ev1',
+    code: 'EM1',
+    name: '싱글 전기모터',
+    short: '싱글 모터',
+    units: 1,
+    maxTorque: 430, baseRpm: 5200, redline: 16000,
+    inertia: 0.06, mass: 1800, final: 9.0, gears: [1],
+    accent: '#3fb8c9',
+  }),
+  electric({
+    id: 'ev2',
+    code: 'EM2',
+    name: '듀얼 전기모터',
+    short: '듀얼 모터',
+    units: 2,
+    maxTorque: 1000, baseRpm: 5400, redline: 16000,
+    inertia: 0.1, mass: 2300, final: 8.1, gears: [1],
+    accent: '#3fb8c9',
+  }),
+  electric({
+    id: 'evm',
+    code: 'EM4',
+    name: '트라이·쿼드 전기모터',
+    short: '멀티 모터',
+    units: 4,
+    maxTorque: 1700, baseRpm: 7900, redline: 16000,
+    inertia: 0.16, mass: 2150, final: 5.6, gears: [1],
+    accent: '#3fb8c9',
+  }),
+);
+
 for (const e of ENGINES) {
-  assignFiring(e.cylinders);
+  if (!e.electric) assignFiring(e.cylinders);
   e.count = e.cylinders.length;
 }
 
@@ -204,6 +240,11 @@ const smooth = (t) => (t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t));
 
 // Normalised full-load torque curve (0..1) at a given rpm.
 export function torqueCurve(e, rpm) {
+  if (e.electric) {
+    if (rpm <= e.baseRpm) return 1;
+    // constant power above base speed, easing off near the motor's top speed
+    return (e.baseRpm / rpm) * (rpm > e.redline * 0.92 ? Math.max(0, 1 - (rpm - e.redline * 0.92) / (e.redline * 0.12)) : 1);
+  }
   if (rpm <= 0) return e.lowFrac * 0.8;
   if (rpm < e.torqueFrom) {
     const t = rpm / e.torqueFrom;

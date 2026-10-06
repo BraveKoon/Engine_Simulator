@@ -954,6 +954,184 @@ class EngineModel {
   }
 }
 
+// Electric drive unit(s): stator in a see-through housing, spinning rotor with
+// magnets, two-stage reduction gears to the half shafts, inverter, orange HV
+// cables and the battery pack underneath. Same interface as EngineModel.
+class MotorModel {
+  constructor(spec, mats) {
+    this.spec = spec;
+    this.mats = mats;
+    this.root = new THREE.Group();
+    this.rotors = [];
+    this.stages = [];
+    this.shafts = [];
+    this.own = [];
+    this.build();
+  }
+
+  mat(m) {
+    this.own.push(m);
+    return m;
+  }
+
+  build() {
+    const { spec, mats } = this;
+    const n = spec.units;
+    // 1 unit; 2 = front + rear axle; 4 = one per wheel (two per axle, mirrored)
+    const layout = n === 1 ? [[0, 0, 1]] : n === 2 ? [[0, -1.6, 1], [0, 1.6, 1]] : [[-1.25, -1.6, -1], [1.25, -1.6, 1], [-1.25, 1.6, -1], [1.25, 1.6, 1]];
+    this.winding = this.mat(new THREE.MeshStandardMaterial({ color: 0xb4744f, metalness: 0.8, roughness: 0.35, emissive: 0xff5a1a, emissiveIntensity: 0 }));
+    this.hv = this.mat(new THREE.MeshStandardMaterial({ color: 0xff7a1a, metalness: 0.1, roughness: 0.55 }));
+    const magnetN = this.mat(new THREE.MeshStandardMaterial({ color: 0xc8372d, metalness: 0.5, roughness: 0.4 }));
+    const magnetS = this.mat(new THREE.MeshStandardMaterial({ color: 0x3f6fbf, metalness: 0.5, roughness: 0.4 }));
+    const housing = this.mat(new THREE.MeshStandardMaterial({ color: 0xdfe6ea, metalness: 0.2, roughness: 0.2, transparent: true, opacity: 0.2, depthWrite: false, side: THREE.DoubleSide }));
+    const small = n === 4;
+    const R = small ? 0.7 : 0.95; // stator outer radius
+    const Lm = small ? 1.5 : 2.0; // stator length
+    for (const [x0, z0, side] of layout) {
+      const u = new THREE.Group();
+      u.position.set(x0, 0, z0);
+      u.scale.x = side; // mirrored units put their gears outboard
+      this.root.add(u);
+      // housing + cooling ribs
+      const shell = new THREE.Mesh(new THREE.CylinderGeometry(R + 0.12, R + 0.12, Lm + 0.3, 40, 1, true).rotateZ(Math.PI / 2), housing);
+      shell.renderOrder = 2;
+      u.add(shell);
+      for (let i = 0; i <= 6; i++) {
+        const rib = shadowed(new THREE.Mesh(new THREE.TorusGeometry(R + 0.13, 0.035, 8, 40).rotateY(Math.PI / 2), mats.alu));
+        rib.position.x = -Lm / 2 - 0.15 + (i / 6) * (Lm + 0.3);
+        u.add(rib);
+      }
+      const capGeo = new THREE.CylinderGeometry(R + 0.16, R + 0.16, 0.12, 40).rotateZ(Math.PI / 2);
+      const capBack = shadowed(new THREE.Mesh(capGeo, mats.alu));
+      capBack.position.x = -Lm / 2 - 0.2;
+      u.add(capBack);
+      // stator core (laminated ring) and copper end windings
+      const core = shadowed(new THREE.Mesh(new THREE.LatheGeometry([new THREE.Vector2(R * 0.66, -Lm / 2), new THREE.Vector2(R, -Lm / 2), new THREE.Vector2(R, Lm / 2), new THREE.Vector2(R * 0.66, Lm / 2), new THREE.Vector2(R * 0.66, -Lm / 2)], 40).rotateZ(-Math.PI / 2), mats.darkSteel));
+      u.add(core);
+      for (const e of [-1, 1]) {
+        const coil = shadowed(new THREE.Mesh(new THREE.TorusGeometry(R * 0.83, R * 0.13, 10, 36).rotateY(Math.PI / 2), this.winding));
+        coil.position.x = e * (Lm / 2 + 0.06);
+        u.add(coil);
+      }
+      // rotor + magnets + shaft (spins)
+      const rotor = new THREE.Group();
+      const drum = shadowed(new THREE.Mesh(new THREE.CylinderGeometry(R * 0.6, R * 0.6, Lm * 0.94, 32).rotateZ(Math.PI / 2), mats.steel));
+      rotor.add(drum);
+      for (let k = 0; k < 8; k++) {
+        const mag = new THREE.Mesh(new THREE.BoxGeometry(Lm * 0.9, 0.05, R * 0.34), k % 2 ? magnetS : magnetN);
+        const a = (k / 8) * Math.PI * 2;
+        mag.position.set(0, Math.cos(a) * R * 0.61, Math.sin(a) * R * 0.61);
+        mag.rotation.x = -a;
+        rotor.add(mag);
+      }
+      const shaftLen = Lm + 1.2;
+      const shaft = shadowed(new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, shaftLen, 16).rotateZ(Math.PI / 2), mats.chrome));
+      shaft.position.x = 0.35;
+      rotor.add(shaft);
+      u.add(rotor);
+      this.rotors.push({ g: rotor, side });
+      // reduction: pinion (13) -> idler big (40) / small (15) -> ring gear (42)
+      const gx = Lm / 2 + 0.55;
+      const mod = small ? 0.75 : 1;
+      const N = [13, 40, 15, 42];
+      const r = N.map((t) => t * 0.018 * mod);
+      const pinion = shadowed(new THREE.Mesh(gearGeometry(r[0], N[0], 0.22, 0), mats.steel));
+      pinion.position.x = gx;
+      rotor.add(pinion); // turns with the rotor
+      const idlerY = -(r[0] + r[1]);
+      const idler = new THREE.Group();
+      idler.position.set(gx, idlerY, 0);
+      const big = shadowed(new THREE.Mesh(gearGeometry(r[1], N[1], 0.2, 0.06), mats.steel));
+      const sm = shadowed(new THREE.Mesh(gearGeometry(r[2], N[2], 0.24, 0), mats.steel));
+      sm.position.x = 0.32;
+      idler.add(big, sm);
+      u.add(idler);
+      // the ring gear sits forward of the idler (toward +z for this unit)
+      const psi2 = Math.PI / 2;
+      const ring = new THREE.Group();
+      const d2 = r[2] + r[3];
+      ring.position.set(gx + 0.32, idlerY + Math.cos(psi2) * d2, Math.sin(psi2) * d2);
+      const ringGear = shadowed(new THREE.Mesh(gearGeometry(r[3], N[3], 0.22, 0.1), mats.steel));
+      ring.add(ringGear);
+      u.add(ring);
+      this.stages.push({ idler, ring, N, psi2 });
+      // gear case around the reduction
+      const caseBox = new THREE.Mesh(new THREE.BoxGeometry(0.75, d2 + r[1] + r[3] + 0.4, d2 + r[1] + r[3] + 0.3), housing);
+      caseBox.position.set(gx + 0.16, idlerY + 0.1, d2 / 2);
+      caseBox.renderOrder = 2;
+      u.add(caseBox);
+      // half shafts with CV boots out of the ring gear (along the axle)
+      const half = new THREE.Group();
+      half.position.copy(ring.position);
+      const hs = shadowed(new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 1.6, 12).rotateZ(Math.PI / 2), mats.steel));
+      hs.position.x = 0.9;
+      const boot = shadowed(new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.17, 0.28, 12, 3).rotateZ(Math.PI / 2), mats.rubber));
+      boot.position.x = 1.75;
+      const hub = shadowed(new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.08, 6).rotateZ(Math.PI / 2), mats.darkSteel));
+      hub.position.x = 1.95;
+      half.add(hs, boot, hub);
+      u.add(half);
+      this.shafts.push(half);
+      // inverter on top, HV cables down to the battery
+      const inv = shadowed(new THREE.Mesh(new THREE.BoxGeometry(Lm * 0.8, 0.32, R * 1.3), mats.alu));
+      inv.position.set(-0.1, R + 0.32, 0);
+      u.add(inv);
+      const fins = new THREE.Mesh(new THREE.BoxGeometry(Lm * 0.7, 0.06, R * 1.1), mats.darkSteel);
+      fins.position.set(-0.1, R + 0.51, 0);
+      u.add(fins);
+      for (const dz of [-0.18, 0.18]) {
+        u.add(tube([new THREE.Vector3(-Lm * 0.4, R + 0.3, dz), new THREE.Vector3(-Lm / 2 - 0.5, R + 0.1, dz * 1.4), new THREE.Vector3(-Lm / 2 - 0.6, -R - 0.4, dz * 1.6), new THREE.Vector3(-Lm / 2 - 0.4, -R - 0.75, dz * 2)], 0.055, this.hv));
+      }
+    }
+    // battery pack: tray with modules
+    this.root.updateMatrixWorld(true);
+    const bb = new THREE.Box3().setFromObject(this.root);
+    const top = bb.min.y - 0.12;
+    const w = bb.max.x - bb.min.x + 0.8;
+    const d = bb.max.z - bb.min.z + 0.6;
+    const tray = shadowed(new THREE.Mesh(new THREE.BoxGeometry(w, 0.32, d), mats.black));
+    tray.position.set((bb.min.x + bb.max.x) / 2, top - 0.16, (bb.min.z + bb.max.z) / 2);
+    this.root.add(tray);
+    const cols = Math.max(2, Math.round(w / 0.9));
+    const rows = Math.max(2, Math.round(d / 0.9));
+    const modGeo = new THREE.BoxGeometry((w / cols) * 0.86, 0.1, (d / rows) * 0.86);
+    const mods = new THREE.InstancedMesh(modGeo, mats.accent, cols * rows);
+    const m4 = new THREE.Matrix4();
+    let i = 0;
+    for (let a = 0; a < cols; a++) {
+      for (let b = 0; b < rows; b++) {
+        m4.makeTranslation(tray.position.x - w / 2 + (a + 0.5) * (w / cols), top + 0.05, tray.position.z - d / 2 + (b + 0.5) * (d / rows));
+        mods.setMatrixAt(i++, m4);
+      }
+    }
+    this.root.add(mods);
+    this.floor = top - 0.32;
+  }
+
+  update(theta, rpm, state) {
+    for (const { g, side } of this.rotors) g.rotation.x = theta * side;
+    for (const [i, st] of this.stages.entries()) {
+      const side = this.rotors[i].side;
+      const [Np, Nb, Ns, Nr] = st.N;
+      const th = theta * side;
+      const phiI = -th * (Np / Nb) + meshOffset(Np, Math.PI, Nb);
+      st.idler.rotation.x = phiI;
+      st.ring.rotation.x = -phiI * (Ns / Nr) + meshOffset(Ns, st.psi2, Nr);
+      this.shafts[i].rotation.x = st.ring.rotation.x;
+    }
+    // windings glow with the current through them
+    this.winding.emissiveIntensity = state.running ? 0.05 + (state.load || 0) * 0.9 : 0;
+  }
+
+  dispose() {
+    const shared = new Set(Object.values(this.mats));
+    this.root.traverse((o) => {
+      if (o.geometry) o.geometry.dispose();
+      if (o.material && !shared.has(o.material)) o.material.dispose();
+    });
+  }
+}
+
 const VIEWS = [
   { name: '사선', dir: [0.85, 0.55, 1.0] },
   { name: '정면', dir: [-1, 0.25, 0.0001] },
@@ -1075,7 +1253,7 @@ export class EngineView {
   }
 
   setEngine(spec) {
-    this.setModel(new EngineModel(spec, this.mats));
+    this.setModel(spec.electric ? new MotorModel(spec, this.mats) : new EngineModel(spec, this.mats));
   }
 
   /** Show any model exposing { root, floor, update(theta, rpm, state), dispose() }. */

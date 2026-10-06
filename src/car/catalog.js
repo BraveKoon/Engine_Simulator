@@ -73,7 +73,41 @@ const PAINTS = {
 export const PAINT_SWATCHES = ['#c8372d', '#e8a41a', '#3f7fbf', '#2f3a44', '#dcdad4', '#4b5a3c', '#111214'];
 
 /** Build the car description from the choices and the matching production car. */
-export function buildCar(engine, chassis, inch, real = carsFor(engine.id, chassis, inch)[0]) {
+const TYPE_H = { hatch: 1.45, sedan: 1.45, fastback: 1.3, coupe: 1.32, super: 1.2, suv: 1.7, offroad: 1.9, pickup: 1.85 };
+
+/**
+ * A made-up car for choices no production car matches (shown as the simplified model).
+ * Takes its body from a real car with the same engine and chassis when there is one.
+ */
+export function virtualCar(engine, chassis, inch) {
+  const like = carsFor(engine.id, chassis)[0];
+  let type = like?.type;
+  if (!type) {
+    if (chassis === 'frame') type = inch >= 20 ? 'offroad' : 'pickup';
+    else if (engine.count >= 10 || engine.id === 'evm') type = 'super';
+    else if (engine.id === 'v8' || engine.id === 'h6') type = 'coupe';
+    else if (engine.id === 'i4' || engine.id === 'ev1') type = inch >= 19 ? 'hatch' : 'sedan';
+    else type = 'sedan';
+  }
+  const base = BODY_TYPES[type];
+  const dims = like ? [like.L, like.W, like.H, like.wb] : [base.L, base.W, TYPE_H[type], base.wb];
+  return {
+    name: `커스텀 ${engine.code} ${base.name}`,
+    engine: engine.id,
+    chassis,
+    type,
+    wheels: [inch],
+    L: dims[0],
+    W: dims[1],
+    H: dims[2],
+    wb: dims[3],
+    kg: like?.kg ?? Math.round(base.mass + (engine.electric ? 450 : 0)),
+    paint: like?.paint ?? PAINTS[type],
+    virtual: true,
+  };
+}
+
+export function buildCar(engine, chassis, inch, real = carsFor(engine.id, chassis, inch)[0] ?? virtualCar(engine, chassis, inch)) {
   const type = real.type;
   const base = BODY_TYPES[type];
   // real proportions; overhangs split by layout (mid/rear engines carry less up front)
@@ -86,6 +120,7 @@ export function buildCar(engine, chassis, inch, real = carsFor(engine.id, chassi
   let drive = base.drive;
   if (type === 'sedan' && engine.count >= 8) drive = 'AWD 사륜구동';
   if (type === 'hatch' && engine.count >= 4) drive = 'FF 전륜구동';
+  if (engine.electric) drive = engine.units > 1 ? `AWD 사륜구동 (모터 ${engine.id === 'evm' ? '3~4' : 2}개)` : type === 'hatch' ? 'FF 전륜구동' : 'RR 후륜구동';
   const car = {
     type,
     typeName: engine.id === 'w16' ? '하이퍼카' : base.name,
@@ -124,7 +159,7 @@ export function estimatePerformance(car) {
   let lastShift = 0;
   for (let t = 0; t < 70; t += dt) {
     s.update(dt);
-    if (s.locked && s.gear < 6 && s.rpm > car.engine.redline - 120 && t - lastShift > 0.4) {
+    if (s.locked && s.gear < car.engine.gears.length && s.rpm > car.engine.redline - 120 && t - lastShift > 0.4) {
       s.setGear(s.gear + 1);
       lastShift = t;
     }

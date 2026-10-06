@@ -432,7 +432,7 @@ svg {
 
 .engine-card {
   display: grid;
-  grid-template-columns: 36px minmax(0, 1fr) 50px 50px 44px;
+  grid-template-columns: 36px minmax(0, 1fr) 54px 60px 48px;
   gap: 10px;
   align-items: center;
   width: 100%;
@@ -493,6 +493,7 @@ svg {
 
 .ec-n {
   text-align: right;
+  white-space: nowrap;
   font: 600 19px/1 var(--f-display);
   font-variant-numeric: tabular-nums;
 }
@@ -556,9 +557,8 @@ svg {
   box-shadow: inset 0 0 0 1px var(--ink);
 }
 
-.chassis-card:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
+.chassis-card.virtual .ch-art {
+  opacity: 0.55;
 }
 
 .ch-art {
@@ -680,8 +680,22 @@ svg {
   font-weight: 600;
 }
 
-.ex.none {
-  color: var(--hot);
+.ex.none em {
+  font-weight: 500;
+  color: var(--ink-2);
+}
+
+.list-head {
+  padding: 8px 16px 6px;
+  font: 500 11px var(--f-mono);
+  letter-spacing: 0.1em;
+  color: var(--ink-2);
+  background: var(--paper);
+  border-bottom: 1px solid var(--rule);
+}
+
+.li-dot {
+  fill: currentColor;
 }
 
 .wheel-grid {
@@ -706,13 +720,12 @@ svg {
   box-shadow: inset 0 0 0 1px var(--ink);
 }
 
-.wheel-card:disabled {
-  cursor: not-allowed;
+.wheel-card.virtual {
   background: repeating-linear-gradient(-45deg, var(--sheet) 0 6px, var(--paper) 6px 12px);
 }
 
-.wheel-card:disabled .wheel-img {
-  opacity: 0.35;
+.wheel-card.virtual .wheel-img {
+  opacity: 0.6;
 }
 
 .wheel-img {
@@ -798,7 +811,7 @@ svg {
 .wheel-card .none {
   margin: 0;
   font-size: 12.5px;
-  color: var(--hot);
+  color: var(--ink-2);
 }
 
 /* ───────── Result ───────── */
@@ -1626,7 +1639,7 @@ kbd {
 
 @media (max-width: 370px) {
   .engine-card {
-    grid-template-columns: 30px minmax(0, 1fr) 44px 44px 38px;
+    grid-template-columns: 28px minmax(0, 1fr) 48px 54px 42px;
     gap: 8px;
     padding-inline: 12px;
   }

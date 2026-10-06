@@ -300,7 +300,7 @@ export class CarModel {
       mir.castShadow = true;
       this.body.add(mir);
     }
-    const grilleH = car.chassis === 'frame' ? 0.34 : 0.16;
+    const grilleH = car.engine.electric ? 0.06 : car.chassis === 'frame' ? 0.34 : 0.16;
     const grille = new THREE.Mesh(new THREE.BoxGeometry(0.06, grilleH, W * (car.chassis === 'frame' ? 0.62 : 0.5)), trim);
     grille.position.set(front + 0.04, headY - grilleH / 2 - 0.04, 0);
     this.body.add(grille);
@@ -311,7 +311,7 @@ export class CarModel {
     }
 
     // exhaust tips
-    const tips = car.engine.count >= 8 ? 4 : 2;
+    const tips = car.engine.electric ? 0 : car.engine.count >= 8 ? 4 : 2; // EVs have no exhaust
     const tipGeo = new THREE.CylinderGeometry(0.045, 0.045, 0.14, 16).rotateZ(Math.PI / 2);
     for (let i = 0; i < tips; i++) {
       const side = i % 2 ? 1 : -1;

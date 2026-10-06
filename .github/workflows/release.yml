@@ -37,6 +37,6 @@ jobs:
           gh release create "$VERSION" \
             engine-simulator.html \
             "engine-simulator-web-${VERSION}.zip" \
-            --title "엔진 시뮬레이터 ${VERSION}" \
+            --title "Piston Lab ${VERSION}" \
             --target "$GITHUB_SHA" \
             --notes-file .github/release-notes.md
