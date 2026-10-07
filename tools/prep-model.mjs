@@ -9,6 +9,7 @@
 // usage: node tools/prep-model.mjs in.glb out.glb --length 4.54 [--yaw auto|0|90|180|270]
 //          [--exclude "caliper"]   (parts never treated as wheel even if inside one)
 //          [--drop "Glow"]         (parts to delete)   [--up z]  (model exported Z-up)
+//          [--outliers 0.01]       (share of extreme vertices ignored when finding the car)
 // Wheels are found from geometry, not names: connected pieces shaped like a tyre
 // (round in side view, touching the ground, one per corner); then every piece lying
 // completely inside a wheel's cylinder moves with it.
@@ -134,8 +135,10 @@ if (upAxis === 'z') {
 }
 
 // ---- 2. orientation, scale, ground ------------------------------------------
-// bounding box ignoring the most extreme 0.1% of vertices (stray glow planes, ground bits)
+// bounding box ignoring the most extreme 0.1% of vertices (stray glow planes, ground bits);
+// --outliers 0.01 ignores more for models with bigger stray pieces
 function trimmedBox() {
+  const f = Number(opt('outliers', 0.001));
   const xs = [[], [], []];
   for (const g of geo) {
     const step = Math.max(1, Math.floor(g.P.length / 3 / 20000));
@@ -143,7 +146,7 @@ function trimmedBox() {
   }
   const q = (a, f) => a[Math.min(a.length - 1, Math.max(0, Math.round(f * (a.length - 1))))];
   for (const a of xs) a.sort((u, v) => u - v);
-  return { mn: xs.map((a) => q(a, 0.001)), mx: xs.map((a) => q(a, 0.999)) };
+  return { mn: xs.map((a) => q(a, f)), mx: xs.map((a) => q(a, 1 - f)) };
 }
 const bbox = (list = geo) => {
   const mn = [Infinity, Infinity, Infinity];

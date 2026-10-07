@@ -506,5 +506,206 @@
     "author": "Racing Carz U3D (https://sketchfab.com/jsa201022)",
     "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
     "source": "https://sketchfab.com/3d-models/dodge-ram-srt-10-e70d2d63c47d4a069b89a2045037449a"
+  },
+  "테슬라 모델 3": {
+    "file": "models/tesla_model_3.glb",
+    "paint": [
+      "primary"
+    ],
+    "trim": [],
+    "title": "Tesla 2018 Model 3",
+    "author": "Ameer Studio (https://sketchfab.com/uchiha.321abc)",
+    "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+    "source": "https://sketchfab.com/3d-models/tesla-2018-model-3-5ef9b845aaf44203b6d04e2c677e444f"
+  },
+  "테슬라 모델 3 퍼포먼스": {
+    "file": "models/tesla_model_3.glb",
+    "paint": [
+      "primary"
+    ],
+    "trim": [],
+    "title": "Tesla 2018 Model 3",
+    "author": "Ameer Studio (https://sketchfab.com/uchiha.321abc)",
+    "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+    "source": "https://sketchfab.com/3d-models/tesla-2018-model-3-5ef9b845aaf44203b6d04e2c677e444f"
+  },
+  "현대 아이오닉 6": {
+    "file": "models/hyundai_ioniq_6.glb",
+    "paint": [],
+    "trim": [],
+    "title": "Hyundai Ioniq 6",
+    "author": "Car2022 (https://sketchfab.com/Car2022)",
+    "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+    "source": "https://sketchfab.com/3d-models/hyundai-ioniq-6-84b503d8606542ae80c09a859e9fd2f2"
+  },
+  "기아 EV6": {
+    "file": "models/kia_ev6.glb",
+    "paint": [],
+    "trim": [],
+    "title": "2022 Kia EV6",
+    "author": "tonielpro520 (https://sketchfab.com/tonielpro520)",
+    "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+    "source": "https://sketchfab.com/3d-models/2022-kia-ev6-44d11e83ef40492bb4bc3d9fbc41e5e0"
+  },
+  "BMW i4 eDrive40": {
+    "file": "models/bmw_i4.glb",
+    "paint": [],
+    "trim": [],
+    "title": "2022 BMW i4",
+    "author": "tonielpro520 (https://sketchfab.com/tonielpro520)",
+    "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+    "source": "https://sketchfab.com/3d-models/2022-bmw-i4-1f23525ab55746899e3645e3352981c2"
+  },
+  "쉐보레 볼트 EV": {
+    "file": "models/chevrolet_bolt.glb",
+    "paint": [
+      "2020_Chevrolet_Bolt_EV_LT_B4W_carpaint_001",
+      "2020_Chevrolet_Bolt_EV_LT_B4W_carpaint_002",
+      "2020_Chevrolet_Bolt_EV_LT_B4W_carpaint_003",
+      "2020_Chevrolet_Bolt_EV_LT_B4W_carpaint_004_001"
+    ],
+    "trim": [],
+    "title": "Chevrolet Bolt EV",
+    "author": "Nieve5677 (https://sketchfab.com/niev)",
+    "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+    "source": "https://sketchfab.com/3d-models/chevrolet-bolt-ev-0a3c3bdbe7ca41289b2c468c2f23f3ba"
+  },
+  "포르쉐 타이칸 터보 S": {
+    "file": "models/porsche_taycan.glb",
+    "paint": [
+      "por_taycan_paint"
+    ],
+    "trim": [],
+    "title": "Porsche Taycan Turbo S (Project Cars 3)",
+    "author": "VückyZ (https://sketchfab.com/vuckyz123)",
+    "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+    "source": "https://sketchfab.com/3d-models/porsche-taycan-turbo-s-project-cars-3-05d7951204e84686ba12625c66d7a8b7"
+  },
+  "아우디 RS e-tron GT": {
+    "file": "models/audi_etron_gt.glb",
+    "paint": [
+      "Color1Mtl"
+    ],
+    "trim": [],
+    "title": "Audi RS e-tron GT",
+    "author": "GT Cars: Hyperspeed (https://sketchfab.com/Car2022)",
+    "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+    "source": "https://sketchfab.com/3d-models/audi-rs-e-tron-gt-c0b994232c654f1d8366a296e85fb7ba"
+  },
+  "현대 아이오닉 5 N": {
+    "file": "models/hyundai_ioniq_5n.glb",
+    "paint": [
+      "h:Hyundai_Ioniq5NRewardRecycled_2023Paint_Material1"
+    ],
+    "trim": [],
+    "title": "2024 Hyundai Ioniq 5 N",
+    "author": "Ddiaz Design (https://sketchfab.com/ddiaz-design)",
+    "license": "CC-BY-NC-4.0 (http://creativecommons.org/licenses/by-nc/4.0/)",
+    "source": "https://sketchfab.com/3d-models/2024-hyundai-ioniq-5-n-8d16325eb7974a948627b3cd77f30f52"
+  },
+  "제네시스 GV60 퍼포먼스": {
+    "file": "models/genesis_gv60.glb",
+    "paint": [],
+    "trim": [],
+    "title": "Gv60",
+    "author": "AcidicCrate7514 (https://sketchfab.com/AcidicCrate7514)",
+    "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+    "source": "https://sketchfab.com/3d-models/gv60-7443f6985c0e4c9a8a79974855165a2f"
+  },
+  "기아 EV9 GT": {
+    "file": "models/kia_ev9.glb",
+    "paint": [
+      "body"
+    ],
+    "trim": [],
+    "title": "2024 Kia EV9 Gt-Line + Interior",
+    "author": "tonielpro520 (https://sketchfab.com/tonielpro520)",
+    "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+    "source": "https://sketchfab.com/3d-models/2024-kia-ev9-gt-line-interior-788d679249a94a20981f40eb13a99c1c"
+  },
+  "포드 F-150 라이트닝": {
+    "file": "models/ford_f150_lightning.glb",
+    "paint": [],
+    "trim": [],
+    "title": "2023 Ford F150 Lihtning Platinum",
+    "author": "tonielpro520 (https://sketchfab.com/tonielpro520)",
+    "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+    "source": "https://sketchfab.com/3d-models/2023-ford-f150-lihtning-platinum-6c495ecc36bd49e198b16d1dee25f90b"
+  },
+  "리막 네베라": {
+    "file": "models/rimac_nevera.glb",
+    "paint": [
+      "carpaint"
+    ],
+    "trim": [],
+    "title": "2020 | Rimac Nevera",
+    "author": "kevin (ケビン) (https://sketchfab.com/sohyalebret)",
+    "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+    "source": "https://sketchfab.com/3d-models/2020-rimac-nevera-dce6df46393244f2a8408df7ec15dad6"
+  },
+  "페라리 루체": {
+    "file": "models/ferrari_luce.glb",
+    "paint": [],
+    "trim": [],
+    "title": "Ferrari Luce (GAME READY)",
+    "author": "PrestigeModels (https://sketchfab.com/burgenbauerb)",
+    "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+    "source": "https://sketchfab.com/3d-models/ferrari-luce-game-ready-768dd381ab2944429f1a260c0880909a"
+  },
+  "테슬라 로드스터 (2세대 시제품)": {
+    "file": "models/tesla_roadster.glb",
+    "paint": [],
+    "trim": [],
+    "title": "Tesla Roadster 2020",
+    "author": "metarex.4d (https://sketchfab.com/metarex.4d)",
+    "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+    "source": "https://sketchfab.com/3d-models/tesla-roadster-2020-1fbf29e297bd4a17ac39a00a378441d8"
+  },
+  "테슬라 모델 S 플래드": {
+    "file": "models/tesla_model_s.glb",
+    "paint": [],
+    "trim": [],
+    "title": "Tesla model S Plaid 2023",
+    "author": "slowpoly (https://sketchfab.com/slowpoly)",
+    "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+    "source": "https://sketchfab.com/3d-models/tesla-model-s-plaid-2023-aec912ed367b4aebacc8676922f42beb"
+  },
+  "루시드 에어 사파이어": {
+    "file": "models/lucid_air.glb",
+    "paint": [],
+    "trim": [],
+    "title": "Lucid Air Sapphire",
+    "author": "dannzjs (https://sketchfab.com/dannzjs)",
+    "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+    "source": "https://sketchfab.com/3d-models/lucid-air-sapphire-c486ddb208704f0c8a4c131f9c82eaf7"
+  },
+  "로터스 에비야": {
+    "file": "models/lotus_evija.glb",
+    "paint": [],
+    "trim": [],
+    "title": "Lotus Evija 2020",
+    "author": "Nieve5677 (https://sketchfab.com/niev)",
+    "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+    "source": "https://sketchfab.com/3d-models/lotus-evija-2020-f7047e314f6648f8b5d61fa6b5a797a4"
+  },
+  "피닌파리나 바티스타": {
+    "file": "models/pininfarina_battista.glb",
+    "paint": [
+      "untitled:Pininfarina_Battista_2020Paint_Material1"
+    ],
+    "trim": [],
+    "title": "2019 Automobili Pininfarina Battista",
+    "author": "Ddiaz Design (https://sketchfab.com/ddiaz-design)",
+    "license": "CC-BY-NC-4.0 (http://creativecommons.org/licenses/by-nc/4.0/)",
+    "source": "https://sketchfab.com/3d-models/2019-automobili-pininfarina-battista-e6b0ea0c98de4f3eb2444371730f6cbf"
+  },
+  "GMC 허머 EV": {
+    "file": "models/gmc_hummer_ev.glb",
+    "paint": [],
+    "trim": [],
+    "title": "GMC Hummer EV 2022",
+    "author": "Unn Interativa (https://sketchfab.com/unninterativa)",
+    "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+    "source": "https://sketchfab.com/3d-models/gmc-hummer-ev-2022-b686365d37a94cbdbb3a01d169f5a0de"
   }
 }

@@ -9,6 +9,7 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { NodeIO } from '@gltf-transform/core';
+import { uninstance } from '@gltf-transform/functions';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
 import { MeshoptDecoder } from 'meshoptimizer';
 import draco3d from 'draco3dgltf';
@@ -22,7 +23,7 @@ const cli = path.resolve('node_modules/.bin/gltf-transform');
 const MAX_TRIS = 180000;
 
 await MeshoptDecoder.ready;
-const io = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({ 'meshopt.decoder': MeshoptDecoder, 'draco3d.decoder': await draco3d.createDecoderModule() });
+const io = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({ 'meshopt.decoder': MeshoptDecoder, 'draco3d.decoder': await draco3d.createDecoderModule(), 'draco3d.encoder': await draco3d.createEncoderModule() });
 const manifestPath = 'src/car/models.json';
 const manifest = fs.existsSync(manifestPath) ? JSON.parse(fs.readFileSync(manifestPath, 'utf8')) : {};
 
@@ -51,9 +52,17 @@ for (const m of cfg.models) {
   // models shipped with identical placeholder materials: colour them before optimize
   // (its dedup step would otherwise merge them all into one)
   let input = src;
+  // GPU-instanced parts (EXT_mesh_gpu_instancing) would lose their instance transforms
+  // further down the pipeline: expand them into ordinary nodes first
+  if (doc.getRoot().listExtensionsUsed().some((e) => e.extensionName === 'EXT_mesh_gpu_instancing')) {
+    await doc.transform(uninstance());
+    input = path.join(tmp, `${m.out}.u.glb`);
+    await io.write(input, doc);
+  }
   if (m.colors) {
+    const colorIn = input;
     input = path.join(tmp, `${m.out}.0.glb`);
-    run(['tools/prep-model.mjs', src, input, '--colors', JSON.stringify(m.colors), '--up', m.up || 'y', '--yaw', '0', '--no-wheels']);
+    run(['tools/prep-model.mjs', colorIn, input, '--colors', JSON.stringify(m.colors), '--up', m.up || 'y', '--yaw', '0', '--no-wheels']);
   }
   execFileSync(cli, ['optimize', input, s1, '--compress', 'false', '--texture-compress', 'webp', '--texture-size', String(m.tex || 1024),
     '--simplify', ratio < 1 ? 'true' : 'false', '--simplify-ratio', String(ratio), '--simplify-error', String(m.simplifyError ?? (tris > 3 * MAX_TRIS ? 0.012 : 0.004)),
@@ -62,6 +71,7 @@ for (const m of cfg.models) {
   if (m.yaw !== undefined) prepArgs.push('--yaw', String(m.yaw));
   if (m.exclude) prepArgs.push('--exclude', m.exclude);
   if (m.drop) prepArgs.push('--drop', m.drop);
+  if (m.outliers) prepArgs.push('--outliers', String(m.outliers));
   if (m.wheels === false) prepArgs.push('--no-wheels'); // wheels fused into the body (scans, merged meshes)
   if (m.up && !m.colors) prepArgs.push('--up', m.up); // colour pre-pass already turned it Y-up
   process.stdout.write(run(prepArgs));

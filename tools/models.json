@@ -593,7 +593,9 @@
       "out": "lotus_evija",
       "cars": [
         "로터스 에비야"
-      ]
+      ],
+      "up": "z",
+      "outliers": 0.01
     },
     {
       "src": "20_pininfarina_battista.glb",
