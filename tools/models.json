@@ -450,6 +450,167 @@
         "닷지 램 SRT-10"
       ],
       "yaw": 137.3
+    },
+    {
+      "src": "01_tesla_model_3.glb",
+      "out": "tesla_model_3",
+      "cars": [
+        "테슬라 모델 3",
+        "테슬라 모델 3 퍼포먼스"
+      ],
+      "paint": [
+        "primary"
+      ]
+    },
+    {
+      "src": "02_hyundai_ioniq_6.glb",
+      "out": "hyundai_ioniq_6",
+      "cars": [
+        "현대 아이오닉 6"
+      ]
+    },
+    {
+      "src": "03_kia_ev6.glb",
+      "out": "kia_ev6",
+      "cars": [
+        "기아 EV6"
+      ]
+    },
+    {
+      "src": "04_bmw_i4.glb",
+      "out": "bmw_i4",
+      "cars": [
+        "BMW i4 eDrive40"
+      ]
+    },
+    {
+      "src": "05_chevrolet_bolt.glb",
+      "out": "chevrolet_bolt",
+      "cars": [
+        "쉐보레 볼트 EV"
+      ],
+      "paint": [
+        "2020_Chevrolet_Bolt_EV_LT_B4W_carpaint_001",
+        "2020_Chevrolet_Bolt_EV_LT_B4W_carpaint_002",
+        "2020_Chevrolet_Bolt_EV_LT_B4W_carpaint_003",
+        "2020_Chevrolet_Bolt_EV_LT_B4W_carpaint_004_001"
+      ]
+    },
+    {
+      "src": "06_porsche_taycan.glb",
+      "out": "porsche_taycan",
+      "cars": [
+        "포르쉐 타이칸 터보 S"
+      ],
+      "paint": [
+        "por_taycan_paint"
+      ]
+    },
+    {
+      "src": "07_audi_etron_gt.glb",
+      "out": "audi_etron_gt",
+      "cars": [
+        "아우디 RS e-tron GT"
+      ],
+      "paint": [
+        "Color1Mtl"
+      ]
+    },
+    {
+      "src": "08_hyundai_ioniq_5n.glb",
+      "out": "hyundai_ioniq_5n",
+      "cars": [
+        "현대 아이오닉 5 N"
+      ],
+      "paint": [
+        "h:Hyundai_Ioniq5NRewardRecycled_2023Paint_Material1"
+      ]
+    },
+    {
+      "src": "10_genesis_gv60.glb",
+      "out": "genesis_gv60",
+      "cars": [
+        "제네시스 GV60 퍼포먼스"
+      ]
+    },
+    {
+      "src": "11_kia_ev9.glb",
+      "out": "kia_ev9",
+      "cars": [
+        "기아 EV9 GT"
+      ],
+      "paint": [
+        "body"
+      ]
+    },
+    {
+      "src": "13_ford_f150_lightning.glb",
+      "out": "ford_f150_lightning",
+      "cars": [
+        "포드 F-150 라이트닝"
+      ]
+    },
+    {
+      "src": "14_rimac_nevera.glb",
+      "out": "rimac_nevera",
+      "cars": [
+        "리막 네베라"
+      ],
+      "paint": [
+        "carpaint"
+      ]
+    },
+    {
+      "src": "15_ferrari_luce.glb",
+      "out": "ferrari_luce",
+      "cars": [
+        "페라리 루체"
+      ]
+    },
+    {
+      "src": "16_tesla_roadster.glb",
+      "out": "tesla_roadster",
+      "cars": [
+        "테슬라 로드스터 (2세대 시제품)"
+      ]
+    },
+    {
+      "src": "17_tesla_model_s.glb",
+      "out": "tesla_model_s",
+      "cars": [
+        "테슬라 모델 S 플래드"
+      ]
+    },
+    {
+      "src": "18_lucid_air.glb",
+      "out": "lucid_air",
+      "cars": [
+        "루시드 에어 사파이어"
+      ]
+    },
+    {
+      "src": "19_lotus_evija.glb",
+      "out": "lotus_evija",
+      "cars": [
+        "로터스 에비야"
+      ]
+    },
+    {
+      "src": "20_pininfarina_battista.glb",
+      "out": "pininfarina_battista",
+      "cars": [
+        "피닌파리나 바티스타"
+      ],
+      "paint": [
+        "untitled:Pininfarina_Battista_2020Paint_Material1"
+      ]
+    },
+    {
+      "src": "21_gmc_hummer_ev.glb",
+      "out": "gmc_hummer_ev",
+      "cars": [
+        "GMC 허머 EV"
+      ]
     }
   ]
 }
