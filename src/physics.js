@@ -47,6 +47,7 @@ export class Simulator {
     this.idleI = 0;
     this.distance = 0;
     this.events = []; // UI notifications
+    this.autoT = 0; // automatic: time until the next shift is allowed
   }
 
   get rpm() {
@@ -201,7 +202,9 @@ export class Simulator {
         const maxCap = e.maxTorque * 1.8;
         const launch = Math.max(0, Math.min(1, (Te + (e.maxTorque / 600) * (rpm - bite)) / maxCap));
         const synced = Math.abs(this.omega - (this.v / this.wheelR) * ratio) < 40 && rpm > e.idle * 1.05;
-        clutchTarget = synced ? 1 : this.throttle > 0.02 ? launch : 0;
+        // an automatic creeps forward at idle like a torque converter
+        const idleCreep = this.automatic && this.brake < 0.3 ? 45 / (e.maxTorque * 1.8) : 0; // ~45 Nm
+        clutchTarget = synced ? 1 : this.throttle > 0.02 ? launch : idleCreep;
         if (Math.abs(this.v) > 3) clutchTarget = Math.max(clutchTarget, 0.8 * smooth((this.rpm - e.idle * 0.9) / 400));
         // anti-stall: let the engine recover when it is being dragged down
         if (!synced && rpm < e.idle * 0.92) clutchTarget = 0;
@@ -269,6 +272,43 @@ export class Simulator {
 
     this.crank += this.omega * dt;
     this.distance += Math.abs(this.v) * dt;
+    if (this.automatic && this.gear > 0 && this.running) this.autoShift(dt);
+  }
+
+  /**
+   * Automatic gearbox (set sim.automatic = true): the driver only picks R / N / D and
+   * gear 1 stands for D. Upshift points rise with throttle, flooring it kicks down.
+   */
+  /** Gear to engage when D is selected while rolling. */
+  driveGear() {
+    const e = this.e;
+    let g = 1;
+    while (g < e.gears.length && (this.v / this.wheelR) * this.ratio(g) * (60 / (Math.PI * 2)) > e.redline * 0.7) g++;
+    return g;
+  }
+
+  autoShift(dt) {
+    if ((this.autoT -= dt) > 0) return;
+    const e = this.e;
+    const top = e.gears.length;
+    const g = this.gear;
+    const rpm = this.rpm;
+    const thr = this.throttle;
+    const span = e.redline - e.idle;
+    const up = Math.min(e.redline - 150, e.idle + span * (0.28 + 0.66 * thr));
+    const down = e.idle * 1.8 + span * 0.3 * thr;
+    const rpmBelow = g > 1 ? rpm * (this.ratio(g - 1) / this.ratio(g)) : Infinity;
+    let next = g;
+    if (Math.abs(this.v) < 1.5 && g > 1) next = 1;
+    else if (g < top && this.locked && rpm > up) next = g + 1;
+    else if (g > 1 && (rpm < down || (thr > 0.9 && rpmBelow < e.redline * 0.82)) && rpmBelow < up - 300) next = g - 1;
+    if (next !== g) {
+      this.gear = next;
+      this.locked = false;
+      this.clutch = Math.min(this.clutch, 0.3);
+      this.shiftT = 0.08;
+      this.autoT = 0.7;
+    }
   }
 
   // Electric drive: the motor is geared straight to the wheels (no clutch, no idle,

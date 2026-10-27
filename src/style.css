@@ -1365,6 +1365,7 @@ svg {
 
 .shifter-head {
   display: flex;
+  align-items: center;
   justify-content: space-between;
   font-size: 12.5px;
   color: var(--ink-2);
@@ -1372,6 +1373,25 @@ svg {
 
 .shifter-head b {
   color: var(--ink);
+}
+
+.trans-seg {
+  display: inline-grid;
+  grid-template-columns: 1fr 1fr;
+  border: 1px solid var(--rule);
+  border-radius: var(--r);
+  overflow: hidden;
+}
+
+.trans-seg button {
+  padding: 2px 8px;
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+.trans-seg button.on {
+  background: var(--ink);
+  color: var(--paper);
 }
 
 .shifter {

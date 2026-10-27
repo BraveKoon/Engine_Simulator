@@ -100,9 +100,9 @@ export class HShifter {
     this.ro.observe(root);
   }
 
-  /** 'manual' = 6-speed H gate, 'ev' = R / N / D. */
+  /** 'manual' = 6-speed H gate; 'ev' or 'auto' = R / N / D. */
   setLayout(kind) {
-    const ev = kind === 'ev';
+    const ev = kind === 'ev' || kind === 'auto';
     if ((this.cols === EV_COLS) === ev) return;
     this.cols = ev ? EV_COLS : COLS;
     this.slots = ev ? EV_SLOTS : SLOTS;

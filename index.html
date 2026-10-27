@@ -191,7 +191,13 @@
               <span class="pedal-value">0%</span>
             </div>
             <div class="shifter-box">
-              <div class="shifter-head"><span>기어</span><b id="gearName">중립</b></div>
+              <div class="shifter-head">
+                <div class="trans-seg" id="transSeg" role="group" aria-label="변속기 종류">
+                  <button data-trans="manual">수동</button>
+                  <button data-trans="auto">자동</button>
+                </div>
+                <b id="gearName">중립</b>
+              </div>
               <div class="shifter" id="shifter"></div>
             </div>
             <div class="rail accel" id="accelPedal">
@@ -240,11 +246,11 @@
           <caption>키보드</caption>
           <tr><td><kbd>W</kbd> <kbd>↑</kbd></td><td>스로틀</td></tr>
           <tr><td><kbd>S</kbd> <kbd>↓</kbd> <kbd>Space</kbd></td><td>브레이크</td></tr>
-          <tr><td><kbd>1</kbd>–<kbd>6</kbd> <kbd>R</kbd> <kbd>N</kbd></td><td>기어 선택</td></tr>
+          <tr><td><kbd>1</kbd>–<kbd>6</kbd> <kbd>R</kbd> <kbd>N</kbd> <kbd>D</kbd></td><td>기어 선택</td></tr>
           <tr><td><kbd>X</kbd> <kbd>Z</kbd></td><td>한 단 올림 / 내림</td></tr>
           <tr><td><kbd>E</kbd></td><td>시동 켜기 / 끄기</td></tr>
         </table>
-        <p class="note">클러치는 자동이에요. 기어를 넣은 채 스로틀을 열면 반클러치로 출발해요.</p>
+        <p class="note">수동에서는 클러치가 자동이라 기어를 넣고 스로틀을 열면 반클러치로 출발해요. 자동 변속기는 D에 넣고 스로틀만 밟으면 1~6단을 알아서 바꾸고, 끝까지 밟으면 킥다운해요.</p>
       </aside>
 
       <div class="toast" id="toast" role="status" aria-live="polite"></div>

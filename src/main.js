@@ -13,7 +13,7 @@ import { wheelImage } from './car/wheelArt.js';
 const $ = (id) => document.getElementById(id);
 
 // ───────── Settings (persisted per browser) ─────────
-const settings = { volume: 0.7, mute: false, slow: false, autoRotate: false, unit: 'kmh', engine: 'i6' };
+const settings = { volume: 0.7, mute: false, slow: false, autoRotate: false, unit: 'kmh', engine: 'i6', trans: 'manual' };
 try {
   Object.assign(settings, JSON.parse(localStorage.getItem('engine-sim') || '{}'));
 } catch {
@@ -366,9 +366,41 @@ $('driveBtn').addEventListener('click', () => startSim(car));
 
 // ───────── Simulator screen ─────────
 const GEAR_NAME = { '-1': '후진', 0: '중립' };
-const gearLetter = (g) => (g === -1 ? 'R' : g === 0 ? 'N' : sim?.e.electric ? 'D' : String(g));
+const gearLetter = (g) => (g === -1 ? 'R' : g === 0 ? 'N' : sim?.e.electric ? 'D' : sim?.automatic ? `D${g}` : String(g));
+const isAuto = (e) => !e.electric && settings.trans === 'auto';
 
-const shifter = new HShifter($('shifter'), (g) => (sim ? sim.setGear(g) : false));
+// In an automatic, D (gear 1 on the gate) picks the gear that suits the current speed.
+const shifter = new HShifter($('shifter'), (g) => {
+  if (!sim) return false;
+  if (sim.automatic && g === 1) return sim.gear > 0 ? true : sim.setGear(sim.driveGear());
+  return sim.setGear(g);
+});
+
+function transLabel(e) {
+  return e.electric ? '1단 감속기' : `6단 ${isAuto(e) ? '자동' : '수동'}`;
+}
+
+function setTrans(t, fromUser = false) {
+  settings.trans = t;
+  save();
+  for (const b of document.querySelectorAll('#transSeg button')) {
+    b.classList.toggle('on', b.dataset.trans === t);
+    b.setAttribute('aria-pressed', String(b.dataset.trans === t));
+  }
+  if (!sim) return;
+  const e = sim.e;
+  $('transSeg').hidden = !!e.electric;
+  if (e.electric) return;
+  sim.automatic = t === 'auto';
+  shifter.setLayout(t);
+  if (fromUser) {
+    sim.setGear(0);
+    shifter.reset();
+    toast(t === 'auto' ? '자동 변속기: D에 넣고 스로틀을 밟으세요' : '수동 변속기: 1단에 넣고 출발하세요');
+  }
+  if (!car) $('engSub').textContent = `${e.displacement.toFixed(1)}L · ${specLine(e).p.ps}마력 · ${transLabel(e)}`;
+}
+for (const b of document.querySelectorAll('#transSeg button')) b.addEventListener('click', () => setTrans(b.dataset.trans, true));
 const brake = new Pedal($('brakePedal'), (v) => sim && (sim.brakeIn = v));
 const accel = new Pedal($('accelPedal'), (v) => sim && (sim.throttleIn = v));
 
@@ -386,14 +418,16 @@ async function startSim(withCar = null) {
   setSimModel();
   wheelAngle = 0;
   tacho.configure(e.redline);
-  shifter.setLayout(e.electric ? 'ev' : 'manual');
+  sim.automatic = isAuto(e);
+  shifter.setLayout(e.electric ? 'ev' : settings.trans);
   shifter.reset();
+  setTrans(settings.trans);
   $('engName').textContent = withCar ? withCar.name : e.name;
   $('engSub').textContent = withCar
     ? `${withCar.typeName} · ${withCar.mass.toLocaleString('en-US')}kg · ${withCar.tyre.label}`
     : e.electric
       ? `${specLine(e).text} · 1단 감속기`
-      : `${e.displacement.toFixed(1)}L · ${specLine(e).p.ps}마력 · 6단 수동`;
+      : `${e.displacement.toFixed(1)}L · ${specLine(e).p.ps}마력 · ${transLabel(e)}`;
   lastCrank = 0;
   // Audio must be unlocked from a user gesture.
   audio.init().then(() => audio.setEngine(e));
@@ -518,10 +552,11 @@ window.addEventListener('keydown', (ev) => {
   held.add(k);
   if (k === 'arrowup' || k === 'w') accel.setKey(1);
   else if (k === 'arrowdown' || k === 's' || k === ' ') brake.setKey(1);
-  else if (k >= '1' && k <= '6') shifter.selectGear(Number(k));
+  else if (k >= '1' && k <= '6') shifter.selectGear(sim?.automatic ? 1 : Number(k));
   else if (k === 'd') shifter.selectGear(1);
   else if (k === 'r') shifter.selectGear(-1);
   else if (k === 'n' || k === '0') shifter.selectGear(0);
+  else if ((k === 'x' || k === 'z') && sim?.automatic) return;
   else if (k === 'x' && sim) shifter.selectGear(Math.min(6, Math.max(1, sim.gear + 1)));
   else if (k === 'z' && sim) shifter.selectGear(sim.gear <= 1 ? 0 : sim.gear - 1);
   else if (k === 'e') $('powerBtn').click();
@@ -594,7 +629,7 @@ function updateInfo() {
   const g = sim.gear;
   $('gearBig').textContent = gearLetter(g);
   $('gearBig').classList.toggle('rev', g === -1);
-  $('gearName').textContent = GEAR_NAME[g] ?? (sim.e.electric ? '주행' : `${g}단`);
+  $('gearName').textContent = GEAR_NAME[g] ?? (sim.e.electric ? '주행' : sim.automatic ? `드라이브 ${g}단` : `${g}단`);
   let cls = '';
   let text = '꺼짐';
   if (sim.starting) {
@@ -628,6 +663,7 @@ selectEngine(selected);
 show('home');
 setSlow(settings.slow);
 setUnit(settings.unit);
+setTrans(settings.trans);
 requestAnimationFrame(frame);
 
 // Stop the audio when the page is hidden.
