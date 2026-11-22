@@ -50,7 +50,7 @@ class EngineProc extends AudioWorkletProcessor {
         // lifting off at high rpm: unburnt fuel crackles in the exhaust
         if (this.pops > 0 && this.tLoad > 0.4 && d.load < 0.08 && this.rpm > 2800) this.popT = 0.4 + this.pops * 0.9;
         this.tRpm = d.rpm; this.tLoad = d.load; this.fire = d.fire; this.starter = d.starter;
-        this.tBoost = d.boost; this.vol = d.vol;
+        this.tBoost = d.boost; this.vol = d.vol; this.blower = d.blower;
       } else if (d.type === 'bov') {
         this.bov = 1;
       }
@@ -131,8 +131,14 @@ class EngineProc extends AudioWorkletProcessor {
       const noise = Math.random() * 2 - 1;
       this.noiseLp += (noise - this.noiseLp) * (0.05 + this.load * 0.1);
       y += this.noiseLp * this.load * (this.rpm / 9000) * 0.5;
-      // turbo whistle
-      if (this.boost > 0.01) {
+      // supercharger: gear-driven rotor whine that follows the crank
+      if (this.blower && this.rpm > 300) {
+        this.whine += 2 * Math.PI * (260 + this.rpm * 0.34) / sr;
+        if (this.whine > 1e4) this.whine %= 2 * Math.PI;
+        const sw = Math.sin(this.whine);
+        y += (sw + 0.35 * Math.sin(this.whine * 2.02)) * (0.018 + 0.05 * this.boost) * Math.min(1, this.rpm / 1800);
+      } else if (this.boost > 0.01) {
+        // turbo whistle
         this.whine += 2 * Math.PI * (1800 + this.boost * 5200 + this.rpm * 0.2) / sr;
         y += Math.sin(this.whine) * this.boost * 0.035;
       }
@@ -233,7 +239,8 @@ export class EngineAudio {
       load: sim.load,
       fire: sim.running && !sim.limiter,
       starter: sim.starting && !sim.e.electric,
-      boost: sim.e.turbo ? sim.boost : 0,
+      boost: sim.induction === 'na' ? 0 : sim.boost,
+      blower: sim.induction === 'super',
       vol: this.muted ? 0 : this.volume,
     });
   }

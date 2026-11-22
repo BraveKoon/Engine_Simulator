@@ -181,6 +181,16 @@
             <div class="status"><i id="statusDot"></i><span id="statusText">꺼짐</span></div>
           </div>
 
+          <div class="induction" id="inductionRow">
+            <span class="ind-k">과급</span>
+            <div class="seg-mini" id="inductionSeg" role="group" aria-label="과급 방식">
+              <button data-ind="na">자연흡기</button>
+              <button data-ind="turbo">터보</button>
+              <button data-ind="super">슈퍼차저</button>
+            </div>
+            <span class="boost"><i id="boostBar"></i><b id="boostVal">0.0</b> bar</span>
+          </div>
+
           <div class="deck">
             <div class="rail brake" id="brakePedal">
               <span class="rail-k">BRAKE</span>
@@ -195,10 +205,15 @@
                 <div class="trans-seg" id="transSeg" role="group" aria-label="변속기 종류">
                   <button data-trans="manual">수동</button>
                   <button data-trans="auto">자동</button>
+                  <button data-trans="dct">DCT</button>
                 </div>
                 <b id="gearName">중립</b>
               </div>
-              <div class="shifter" id="shifter"></div>
+              <div class="shifter-wrap">
+                <div class="shifter" id="shifter"></div>
+                <button class="paddle down" id="paddleDown" aria-label="한 단 내림 (패들)">−</button>
+                <button class="paddle up" id="paddleUp" aria-label="한 단 올림 (패들)">+</button>
+              </div>
             </div>
             <div class="rail accel" id="accelPedal">
               <span class="rail-k">THROTTLE</span>
@@ -247,10 +262,10 @@
           <tr><td><kbd>W</kbd> <kbd>↑</kbd></td><td>스로틀</td></tr>
           <tr><td><kbd>S</kbd> <kbd>↓</kbd> <kbd>Space</kbd></td><td>브레이크</td></tr>
           <tr><td><kbd>1</kbd>–<kbd>6</kbd> <kbd>R</kbd> <kbd>N</kbd> <kbd>D</kbd></td><td>기어 선택</td></tr>
-          <tr><td><kbd>X</kbd> <kbd>Z</kbd></td><td>한 단 올림 / 내림</td></tr>
+          <tr><td><kbd>X</kbd> <kbd>Z</kbd></td><td>한 단 올림 / 내림 (자동·DCT는 패들)</td></tr>
           <tr><td><kbd>E</kbd></td><td>시동 켜기 / 끄기</td></tr>
         </table>
-        <p class="note">수동에서는 클러치가 자동이라 기어를 넣고 스로틀을 열면 반클러치로 출발해요. 자동 변속기는 D에 넣고 스로틀만 밟으면 1~6단을 알아서 바꾸고, 끝까지 밟으면 킥다운해요.</p>
+        <p class="note">수동에서는 클러치가 자동이라 기어를 넣고 스로틀을 열면 반클러치로 출발해요. 자동 변속기는 D에 넣고 스로틀만 밟으면 1~6단을 알아서 바꾸고, 끝까지 밟으면 킥다운해요. DCT는 변속이 끊김 없이 순식간이에요. 자동과 DCT에서 − / + 패들을 누르면 수동(M) 모드가 되고, D를 다시 고르면 자동으로 돌아가요.</p>
       </aside>
 
       <div class="toast" id="toast" role="status" aria-live="polite"></div>

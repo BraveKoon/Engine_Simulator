@@ -486,6 +486,7 @@ class EngineModel {
     this.buildExhaust();
     this.buildIntake();
     this.buildTurbos();
+    this.buildSupercharger();
     this.buildStand(front, rear);
   }
 
@@ -738,6 +739,8 @@ class EngineModel {
     else if (isBoxer) plenum = new THREE.Vector3(cx, 1.6, 0);
     else plenum = new THREE.Vector3(cx, this.deckDist * 0.95 + 0.9, 0);
     const len = x1 - x0 - 0.2;
+    this.plenum = plenum;
+    this.plenumLen = len;
     const pl = shadowed(new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, len, 28).rotateZ(Math.PI / 2), mats.alu));
     pl.position.copy(plenum);
     this.root.add(pl);
@@ -765,6 +768,59 @@ class EngineModel {
         this.root.add(tube([p0, p1, p2, p3], 0.075, mats.chrome, false, 24));
       }
     }
+  }
+
+  // Roots-type blower on top of the intake, belt-driven from the crank: two three-lobe
+  // rotors turning against each other inside a see-through case.
+  buildSupercharger() {
+    if (!this.spec.supercharger) return;
+    const { mats } = this;
+    const L = Math.max(1.4, this.plenumLen * 0.7);
+    const c = this.plenum.clone();
+    c.y += 0.62;
+    const blower = new THREE.Group();
+    blower.position.copy(c);
+    this.root.add(blower);
+    const caseMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, L, 32, 1, true).rotateZ(Math.PI / 2), mats.liner);
+    caseMesh.scale.set(1, 0.85, 1.45);
+    caseMesh.renderOrder = 2;
+    blower.add(caseMesh);
+    for (const s of [-1, 1]) {
+      const end = shadowed(new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.08, 32).rotateZ(Math.PI / 2), mats.alu));
+      end.scale.set(1, 0.85, 1.45);
+      end.position.x = (s * L) / 2;
+      blower.add(end);
+    }
+    const ribs = shadowed(new THREE.Mesh(new THREE.BoxGeometry(L * 0.9, 0.08, 0.5), mats.darkSteel));
+    ribs.position.y = 0.45;
+    blower.add(ribs);
+    const neck = shadowed(new THREE.Mesh(new THREE.BoxGeometry(L * 0.8, 0.3, 0.5), mats.alu));
+    neck.position.y = -0.4;
+    blower.add(neck);
+    for (const [z, dir] of [[-0.3, 1], [0.3, -1]]) {
+      const rotor = shadowed(new THREE.Mesh(gearGeometry(0.22, 3, L * 0.92, 0), mats.steel));
+      rotor.position.z = z;
+      blower.add(rotor);
+      this.spinners.push({ mesh: rotor, ratio: 2.4 * dir });
+    }
+    // drive pulley at the front + its belt down to the crank pulley
+    const px = this.beltX - 0.16;
+    const pulley = shadowed(new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.14, 24).rotateZ(Math.PI / 2), mats.black));
+    pulley.position.set(px, c.y, c.z);
+    this.root.add(pulley);
+    this.spinners.push({ mesh: pulley, ratio: 2.4 });
+    const shaft = shadowed(new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, Math.abs(c.x - L / 2 - px), 10).rotateZ(Math.PI / 2), mats.steel));
+    shaft.position.set((px + c.x - L / 2) / 2, c.y, c.z);
+    this.root.add(shaft);
+    const pts = [];
+    for (const [y, z, r] of [[0, 0, 0.3], [c.y, c.z, 0.2]]) {
+      for (let i = 0; i < 24; i++) {
+        const a = (i / 24) * Math.PI * 2;
+        pts.push([y + Math.cos(a) * (r + 0.03), z + Math.sin(a) * (r + 0.03)]);
+      }
+    }
+    const loop = hull(pts).map(([y, z]) => new THREE.Vector3(px, y, z));
+    this.root.add(tube(loop, 0.025, mats.rubber, true, 80));
   }
 
   buildTurbos() {

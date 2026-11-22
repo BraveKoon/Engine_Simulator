@@ -310,7 +310,9 @@ export class HShifter {
     }
     const s = this.slots.find((q) => q.gear === g);
     if (!s) return;
-    this.animateTo(this.cols[s.col], s.dir);
+    // choosing the gear that is already in (e.g. D again to leave paddle mode) still reports it
+    if (g === this.gear) this.onSelect(g);
+    else this.animateTo(this.cols[s.col], s.dir);
   }
 
   /** Reset to neutral without triggering callbacks. */

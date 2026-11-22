@@ -1,6 +1,6 @@
 import './style.css';
 import { ENGINES, peakPower } from './engines.js';
-import { Simulator } from './physics.js';
+import { Simulator, INDUCTION, stockInduction, inducedPower } from './physics.js';
 import { EngineView } from './engine3d.js';
 import { EngineAudio } from './audio.js';
 import { RpmBar } from './ui/gauge.js';
@@ -368,18 +368,36 @@ $('driveBtn').addEventListener('click', () => startSim(car));
 
 // ───────── Simulator screen ─────────
 const GEAR_NAME = { '-1': '후진', 0: '중립' };
-const gearLetter = (g) => (g === -1 ? 'R' : g === 0 ? 'N' : sim?.e.electric ? 'D' : sim?.automatic ? `D${g}` : String(g));
-const isAuto = (e) => !e.electric && settings.trans === 'auto';
+const gearLetter = (g) =>
+  g === -1 ? 'R' : g === 0 ? 'N' : sim?.e.electric ? 'D' : sim?.automatic ? `${sim.manualMode ? 'M' : 'D'}${g}` : String(g);
+const TRANS_NAME = { manual: '수동', auto: '자동', dct: 'DCT' };
 
-// In an automatic, D (gear 1 on the gate) picks the gear that suits the current speed.
+// In an automatic / DCT, D (gear 1 on the gate) picks the gear that suits the speed,
+// and choosing D again leaves paddle (M) mode.
 const shifter = new HShifter($('shifter'), (g) => {
   if (!sim) return false;
-  if (sim.automatic && g === 1) return sim.gear > 0 ? true : sim.setGear(sim.driveGear());
+  if (sim.automatic && g === 1) {
+    sim.manualMode = false;
+    return sim.gear > 0 ? true : sim.setGear(sim.driveGear());
+  }
+  sim.manualMode = false;
   return sim.setGear(g);
 });
 
 function transLabel(e) {
-  return e.electric ? '1단 감속기' : `6단 ${isAuto(e) ? '자동' : '수동'}`;
+  if (e.electric) return '1단 감속기';
+  return `6단 ${TRANS_NAME[settings.trans]}`;
+}
+
+// Engine as the 3D view should draw it: with the turbos or the blower chosen.
+const engineForView = (e, kind) => (e.electric ? e : { ...e, turbo: kind === 'turbo' ? e.turbo || 1 : 0, supercharger: kind === 'super' });
+
+function updateEngSub() {
+  if (!sim || car) return;
+  const e = sim.e;
+  $('engSub').textContent = e.electric
+    ? `${specLine(e).text} · 1단 감속기`
+    : `${e.displacement.toFixed(1)}L ${INDUCTION[sim.induction].name} · ${inducedPower(e, sim.induction)}마력 · ${transLabel(e)}`;
 }
 
 function setTrans(t, fromUser = false) {
@@ -392,16 +410,43 @@ function setTrans(t, fromUser = false) {
   if (!sim) return;
   const e = sim.e;
   $('transSeg').hidden = !!e.electric;
+  document.querySelector('.shifter-wrap').classList.toggle('paddles', !e.electric && t !== 'manual');
   if (e.electric) return;
-  sim.automatic = t === 'auto';
-  shifter.setLayout(t);
+  sim.automatic = t !== 'manual';
+  sim.dct = t === 'dct';
+  sim.manualMode = false;
+  shifter.setLayout(t === 'manual' ? 'manual' : 'auto');
   if (fromUser) {
     sim.setGear(0);
     shifter.reset();
-    toast(t === 'auto' ? '자동 변속기: D에 넣고 스로틀을 밟으세요' : '수동 변속기: 1단에 넣고 출발하세요');
+    toast(
+      t === 'manual'
+        ? '수동 변속기: 1단에 넣고 출발하세요'
+        : `${t === 'dct' ? 'DCT' : '자동 변속기'}: D에 넣고 스로틀을 밟으세요. − / + 패들로 직접 변속할 수 있어요`,
+    );
   }
-  if (!car) $('engSub').textContent = `${e.displacement.toFixed(1)}L · ${specLine(e).p.ps}마력 · ${transLabel(e)}`;
+  updateEngSub();
 }
+
+function setInduction(kind, fromUser = false) {
+  if (!sim || sim.e.electric) return;
+  sim.induction = kind;
+  sim.boost = 0;
+  for (const b of document.querySelectorAll('#inductionSeg button')) {
+    b.classList.toggle('on', b.dataset.ind === kind);
+    b.setAttribute('aria-pressed', String(b.dataset.ind === kind));
+  }
+  if (!showCar) view.setEngine(engineForView(sim.e, kind));
+  if (fromUser) toast(`${INDUCTION[kind].name}: 최고 ${inducedPower(sim.e, kind)}마력`);
+  updateEngSub();
+}
+for (const b of document.querySelectorAll('#inductionSeg button')) b.addEventListener('click', () => setInduction(b.dataset.ind, true));
+
+function paddle(dir) {
+  if (sim?.paddle(dir)) $('gearBig').textContent = gearLetter(sim.gear);
+}
+$('paddleDown').addEventListener('click', () => paddle(-1));
+$('paddleUp').addEventListener('click', () => paddle(1));
 for (const b of document.querySelectorAll('#transSeg button')) b.addEventListener('click', () => setTrans(b.dataset.trans, true));
 const brake = new Pedal($('brakePedal'), (v) => sim && (sim.brakeIn = v));
 const accel = new Pedal($('accelPedal'), (v) => sim && (sim.throttleIn = v));
@@ -420,16 +465,13 @@ async function startSim(withCar = null) {
   setSimModel();
   wheelAngle = 0;
   tacho.configure(e.redline);
-  sim.automatic = isAuto(e);
-  shifter.setLayout(e.electric ? 'ev' : settings.trans);
+  shifter.setLayout(e.electric ? 'ev' : settings.trans === 'manual' ? 'manual' : 'auto');
   shifter.reset();
-  setTrans(settings.trans);
   $('engName').textContent = withCar ? withCar.name : e.name;
-  $('engSub').textContent = withCar
-    ? `${withCar.typeName} · ${withCar.mass.toLocaleString('en-US')}kg · ${withCar.tyre.label}`
-    : e.electric
-      ? `${specLine(e).text} · 1단 감속기`
-      : `${e.displacement.toFixed(1)}L · ${specLine(e).p.ps}마력 · ${transLabel(e)}`;
+  if (withCar) $('engSub').textContent = `${withCar.typeName} · ${withCar.mass.toLocaleString('en-US')}kg · ${withCar.tyre.label}`;
+  $('inductionRow').hidden = !!e.electric;
+  setTrans(settings.trans);
+  setInduction(stockInduction(e));
   lastCrank = 0;
   // Audio must be unlocked from a user gesture.
   const exhaust = carSound(withCar);
@@ -441,7 +483,7 @@ function setSimModel() {
   if (showCar && car) {
     showCarModel($('viewport'));
   } else {
-    view.setEngine(sim.e);
+    view.setEngine(engineForView(sim.e, sim.induction));
     renderModelUI($('viewport'), null);
   }
   $('modelToggle').textContent = showCar ? '엔진 보기' : '차량 보기';
@@ -559,7 +601,8 @@ window.addEventListener('keydown', (ev) => {
   else if (k === 'd') shifter.selectGear(1);
   else if (k === 'r') shifter.selectGear(-1);
   else if (k === 'n' || k === '0') shifter.selectGear(0);
-  else if ((k === 'x' || k === 'z') && sim?.automatic) return;
+  else if (k === 'x' && sim?.automatic) paddle(1);
+  else if (k === 'z' && sim?.automatic) paddle(-1);
   else if (k === 'x' && sim) shifter.selectGear(Math.min(6, Math.max(1, sim.gear + 1)));
   else if (k === 'z' && sim) shifter.selectGear(sim.gear <= 1 ? 0 : sim.gear - 1);
   else if (k === 'e') $('powerBtn').click();
@@ -632,7 +675,14 @@ function updateInfo() {
   const g = sim.gear;
   $('gearBig').textContent = gearLetter(g);
   $('gearBig').classList.toggle('rev', g === -1);
-  $('gearName').textContent = GEAR_NAME[g] ?? (sim.e.electric ? '주행' : sim.automatic ? `드라이브 ${g}단` : `${g}단`);
+  $('gearName').textContent =
+    GEAR_NAME[g] ??
+    (sim.e.electric ? '주행' : sim.manualMode ? `수동 모드 ${g}단` : sim.dct ? `DCT ${g}단` : sim.automatic ? `드라이브 ${g}단` : `${g}단`);
+  if (sim.induction !== 'na') {
+    const bar = sim.boost * (sim.induction === 'turbo' ? 1.2 : 0.8);
+    $('boostVal').textContent = bar.toFixed(1);
+    $('boostBar').style.setProperty('--b', `${Math.round(sim.boost * 100)}%`);
+  }
   let cls = '';
   let text = '꺼짐';
   if (sim.starting) {

@@ -6,6 +6,30 @@ const G = 9.81;
 const DEFAULT_WHEEL_R = 0.33;
 const DRIVELINE_EFF = 0.9;
 
+// Forced induction. An engine's maxTorque is for its stock setup; a stock turbo engine
+// makes about 62% of it without boost, and boost multiplies that base torque.
+export const INDUCTION = {
+  na: { name: '자연흡기' },
+  turbo: { name: '터보' },
+  super: { name: '슈퍼차저' },
+};
+export const stockInduction = (e) => (e.turbo ? 'turbo' : 'na');
+const baseTorque = (e) => (e.turbo ? e.maxTorque / 1.6 : e.maxTorque);
+const boostGain = (e, kind) => (kind === 'turbo' ? (e.turbo ? 0.6 : 0.45) : kind === 'super' ? (e.turbo ? 0.55 : 0.4) : 0);
+/** Full-throttle boost (0..1) once spooled, by rpm. */
+export const fullBoost = (e, kind, rpm) =>
+  kind === 'turbo' ? smooth((rpm - 1100) / 2200) : kind === 'super' ? smooth(rpm / (e.redline * 0.55)) : 0;
+/** Full-load torque (Nm) for an induction type at a given boost. */
+export const inducedTorque = (e, kind, boost) => baseTorque(e) * (1 + boostGain(e, kind) * boost);
+/** Peak power (PS) with full boost. */
+export function inducedPower(e, kind) {
+  let best = 0;
+  for (let rpm = 1000; rpm <= e.redline; rpm += 50) {
+    best = Math.max(best, (inducedTorque(e, kind, fullBoost(e, kind, rpm)) * torqueCurve(e, rpm) * rpm) / 7023);
+  }
+  return Math.round(best);
+}
+
 export const GEAR_LABEL = { '-1': 'R', 0: 'N', 1: '1', 2: '2', 3: '3', 4: '4', 5: '5', 6: '6' };
 
 /**
@@ -23,6 +47,7 @@ export class Simulator {
     this.wheelR = car.wheelR ?? DEFAULT_WHEEL_R;
     this.cda = car.cda ?? 0.68;
     this.final = car.final ?? engine.final;
+    this.induction = stockInduction(engine); // 'na' | 'turbo' | 'super'
     this.reset();
   }
 
@@ -147,31 +172,37 @@ export class Simulator {
       thr = Math.max(thr, idleThr);
     }
 
-    // Turbo spool
-    if (e.turbo) {
-      const target = this.running ? smooth((thr - 0.25) / 0.6) * smooth((rpm - 1100) / 2200) : 0;
-      const tc = target > this.boost ? 0.45 + 0.1 * e.turbo : 0.12;
+    // Boost: a turbo spools up with exhaust flow (lag), a supercharger is belt-driven
+    // and follows rpm at once
+    const kind = this.induction;
+    if (kind === 'turbo') {
+      const target = this.running ? smooth((thr - 0.25) / 0.6) * fullBoost(e, kind, rpm) : 0;
+      const tc = target > this.boost ? 0.45 + 0.1 * (e.turbo || 1) : 0.12;
       const prev = this.boost;
       this.boost += (target - this.boost) * Math.min(1, dt / tc);
-      if (prev > 0.55 && this.throttle < 0.1 && this.lastThrottle > 0.4) {
-        this.emit('bov');
-      }
+      if (prev > 0.55 && this.throttle < 0.1 && this.lastThrottle > 0.4) this.emit('bov');
+    } else if (kind === 'super') {
+      const target = this.running ? (0.25 + 0.75 * thr) * fullBoost(e, kind, rpm) : 0;
+      this.boost += (target - this.boost) * Math.min(1, dt / 0.05);
+    } else {
+      this.boost = 0;
     }
     this.lastThrottle = this.throttle;
 
     let comb = 0;
     const fire = this.running && !this.limiter;
     if (fire) {
-      // part throttle needs no boost; full load is limited by boost pressure
-      const avail = e.turbo ? 0.5 + 0.5 * this.boost : 1;
-      comb = Math.min(thr, avail) * Tmax * torqueCurve(e, rpm);
+      // part throttle needs no boost; full load is limited by the boost available
+      const potential = inducedTorque(e, kind, 1);
+      comb = Math.min(thr * potential, inducedTorque(e, kind, this.boost)) * torqueCurve(e, rpm);
     }
-    this.load = fire ? thr * (e.turbo ? 0.6 + 0.4 * this.boost : 1) : 0;
+    this.load = fire ? thr * (kind === 'na' ? 1 : 0.6 + 0.4 * this.boost) : 0;
 
     const x = rpm / e.redline;
     const friction = Tmax * (0.025 + 0.05 * x + 0.03 * x * x);
     const pumping = (1 - thr) * Tmax * 0.06 * x * (this.running ? 1 : 0.5);
-    const drag = this.omega > 0.5 ? friction + pumping : this.omega * 20;
+    const blower = kind === 'super' ? Tmax * 0.025 * x : 0; // belt-driven supercharger losses
+    const drag = this.omega > 0.5 ? friction + pumping + blower : this.omega * 20;
     return comb + starter - drag;
   }
 
@@ -295,20 +326,51 @@ export class Simulator {
     const rpm = this.rpm;
     const thr = this.throttle;
     const span = e.redline - e.idle;
-    const up = Math.min(e.redline - 150, e.idle + span * (0.28 + 0.66 * thr));
+    // a DCT holds gears longer under load
+    const up = Math.min(e.redline - (this.dct ? 80 : 150), e.idle + span * ((this.dct ? 0.32 : 0.28) + 0.66 * thr));
     const down = e.idle * 1.8 + span * 0.3 * thr;
     const rpmBelow = g > 1 ? rpm * (this.ratio(g - 1) / this.ratio(g)) : Infinity;
     let next = g;
     if (Math.abs(this.v) < 1.5 && g > 1) next = 1;
-    else if (g < top && this.locked && rpm > up) next = g + 1;
+    else if (this.manualMode) {
+      // paddle (M) mode: the driver shifts; only drop a gear to keep the engine alive
+      if (g > 1 && rpm < e.idle * 1.15) next = g - 1;
+    } else if (g < top && this.locked && rpm > up) next = g + 1;
     else if (g > 1 && (rpm < down || (thr > 0.9 && rpmBelow < e.redline * 0.82)) && rpmBelow < up - 300) next = g - 1;
-    if (next !== g) {
-      this.gear = next;
+    if (next !== g) this.shiftTo(next);
+  }
+
+  shiftTo(next) {
+    this.gear = next;
+    if (this.dct) {
+      // dual clutch: the next gear is already engaged on the other clutch, so the
+      // engine is matched to it at once and drive never drops out
+      const omega = (Math.abs(this.v) / this.wheelR) * this.ratio(next);
+      this.omega = Math.min(omega, (this.e.redline * 1.05) / RPM);
+      this.locked = this.omega > (this.e.idle * 0.95) / RPM;
+      this.clutch = 1;
+      this.shiftT = 0;
+      this.autoT = 0.35;
+    } else {
       this.locked = false;
       this.clutch = Math.min(this.clutch, 0.3);
       this.shiftT = 0.08;
       this.autoT = 0.7;
     }
+  }
+
+  /** Steering-wheel paddle (-1 / +1) for the automatic and the DCT: switches to M mode. */
+  paddle(dir) {
+    if (!this.automatic || this.gear < 1 || this.e.electric) return false;
+    this.manualMode = true;
+    const next = Math.min(this.e.gears.length, Math.max(1, this.gear + dir));
+    if (next === this.gear) return true;
+    if (dir < 0 && this.rpm * (this.ratio(next) / this.ratio(this.gear)) > this.e.redline - 150) {
+      this.emit('warn', '회전수가 너무 높아 한 단 내릴 수 없어요');
+      return false;
+    }
+    this.shiftTo(next);
+    return true;
   }
 
   // Electric drive: the motor is geared straight to the wheels (no clutch, no idle,
