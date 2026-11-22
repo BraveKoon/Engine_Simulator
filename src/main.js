@@ -7,6 +7,7 @@ import { RpmBar } from './ui/gauge.js';
 import { Pedal, HShifter } from './ui/controls.js';
 import { CHASSIS, WHEELS, PAINT_SWATCHES, buildCar, tyreFor, carsFor } from './car/catalog.js';
 import { REAL_CARS } from './car/realCars.js';
+import { carSound } from './car/sound.js';
 import { makeCarModel, CAR_MODELS, GlbCarModel } from './car/glbCar.js';
 import { wheelImage } from './car/wheelArt.js';
 
@@ -338,6 +339,7 @@ function makeCar(real) {
     ['휠베이스', `${car.real.wb.toFixed(2)} m`],
     ['구동', car.drive.split(' ')[0]],
     ['지상고', `${Math.round(car.clearance * 1000)} mm`],
+    ['배기음', e.electric ? '전기모터 주행음' : carSound(car).label],
   ];
   $('carSpecs').innerHTML = rows.map(([k, v, big]) => `<div><dt>${k}</dt><dd${big ? ' class="big"' : ''}>${v}</dd></div>`).join('');
   const sw = $('swatches');
@@ -430,8 +432,9 @@ async function startSim(withCar = null) {
       : `${e.displacement.toFixed(1)}L · ${specLine(e).p.ps}마력 · ${transLabel(e)}`;
   lastCrank = 0;
   // Audio must be unlocked from a user gesture.
-  audio.init().then(() => audio.setEngine(e));
-  audio.setEngine(e);
+  const exhaust = carSound(withCar);
+  audio.init().then(() => audio.setEngine(e, exhaust));
+  audio.setEngine(e, exhaust);
 }
 
 function setSimModel() {

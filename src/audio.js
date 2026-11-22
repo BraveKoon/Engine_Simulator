@@ -28,6 +28,7 @@ class EngineProc extends AudioWorkletProcessor {
     this.res = []; this.resGain = []; this.lp = new Biquad(); this.lp2 = new Biquad();
     this.dc = 0; this.bov = 0; this.bovLp = new Biquad(); this.rasp = 0.4; this.gain = 1;
     this.whine = 0; this.starterPh = 0; this.noiseLp = 0; this.counter = 0; this.lastIdx = 0;
+    this.muffle = 1; this.pops = 0; this.popT = 0; this.crack = 0;
     this.port.onmessage = (ev) => {
       const d = ev.data;
       if (d.type === 'engine' && d.electric) {
@@ -43,8 +44,11 @@ class EngineProc extends AudioWorkletProcessor {
         d.formants.forEach((f, i) => this.res[i].bandpass(f, i === 0 ? 1.6 : 2.4, sampleRate));
         this.resGain = d.formants.map((_, i) => [1.4, 0.9, 0.45][i] || 0.3);
         this.rasp = d.rasp; this.gain = d.gain; this.phase = 0; this.lastIdx = 0;
+        this.muffle = d.muffle || 1; this.pops = d.pops || 0;
         this.bovLp.bandpass(2600, 0.8, sampleRate);
       } else if (d.type === 'state') {
+        // lifting off at high rpm: unburnt fuel crackles in the exhaust
+        if (this.pops > 0 && this.tLoad > 0.4 && d.load < 0.08 && this.rpm > 2800) this.popT = 0.4 + this.pops * 0.9;
         this.tRpm = d.rpm; this.tLoad = d.load; this.fire = d.fire; this.starter = d.starter;
         this.tBoost = d.boost; this.vol = d.vol;
       } else if (d.type === 'bov') {
@@ -89,7 +93,7 @@ class EngineProc extends AudioWorkletProcessor {
       this.load += (this.tLoad - this.load) * 0.0015;
       this.boost += (this.tBoost - this.boost) * 0.0008;
       if ((this.counter++ & 63) === 0) {
-        const cut = 500 + this.rpm * 0.45 + this.load * 2600;
+        const cut = (500 + this.rpm * 0.45 + this.load * 2600) * this.muffle;
         this.lp.lowpass(cut, 0.8, sr); this.lp2.lowpass(cut * 1.6, 0.6, sr);
       }
       // crank phase in degrees of a 720° cycle
@@ -131,6 +135,18 @@ class EngineProc extends AudioWorkletProcessor {
       if (this.boost > 0.01) {
         this.whine += 2 * Math.PI * (1800 + this.boost * 5200 + this.rpm * 0.2) / sr;
         y += Math.sin(this.whine) * this.boost * 0.035;
+      }
+      // overrun crackle: sharp pops that fade out as the revs fall
+      if (this.popT > 0) {
+        this.popT -= 1 / sr;
+        if (Math.random() < (this.pops * 38 * Math.min(1, this.popT * 2)) / sr) {
+          this.crack = 0.35 + Math.random() * 0.5 * this.pops;
+          this.pulses.push({ t: 0, a: 0.5 + Math.random() * 0.6, tau: 0.0012 + Math.random() * 0.0015, noise: 1.2 });
+        }
+      }
+      if (this.crack > 0.002) {
+        y += this.crack * (Math.random() * 2 - 1);
+        this.crack *= 0.993;
       }
       // blow-off valve
       if (this.bov > 0.001) {
@@ -188,8 +204,10 @@ export class EngineAudio {
     if (this.ctx.state !== 'running') await this.ctx.resume();
   }
 
-  setEngine(e) {
+  /** e: engine spec; car: optional exhaust profile from car/sound.js */
+  setEngine(e, car = this.pendingCar) {
     this.pendingEngine = e;
+    this.pendingCar = car;
     if (!this.ready) return;
     if (e.electric) {
       this.node.port.postMessage({ type: 'engine', electric: true });
@@ -198,10 +216,12 @@ export class EngineAudio {
     this.node.port.postMessage({
       type: 'engine',
       fire: e.cylinders.map((c) => c.fire),
-      imbalance: e.sound.imbalance,
-      formants: e.sound.formants,
-      rasp: e.sound.rasp,
-      gain: e.sound.gain,
+      imbalance: e.sound.imbalance.map((v) => Math.min(0.6, v * (car?.imb ?? 1))),
+      formants: e.sound.formants.map((f) => f * (car?.pitch ?? 1)),
+      rasp: Math.max(0, e.sound.rasp + (car?.rasp ?? 0)),
+      gain: e.sound.gain * (car?.gain ?? 1),
+      muffle: car?.muffle ?? 1,
+      pops: car?.pops ?? 0,
     });
   }
 

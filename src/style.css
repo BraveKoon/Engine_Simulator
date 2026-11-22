@@ -1746,3 +1746,8 @@ kbd {
 [hidden] {
   display: none !important;
 }
+
+/* the exhaust description gets a full row */
+.spec-grid div:last-child {
+  grid-column: 1 / -1;
+}
