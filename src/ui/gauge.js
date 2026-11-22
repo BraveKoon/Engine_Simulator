@@ -50,14 +50,18 @@ export class RpmBar {
     this.bg.width = w;
     this.bg.height = h;
     const c = this.bg.getContext('2d');
-    c.font = `500 ${Math.round(10 * dpr)}px 'IBM Plex Mono', ui-monospace, monospace`;
-    c.textBaseline = 'bottom';
+    // labels sit on the bottom edge (alphabetic baseline, so a font's tall ascent can't
+    // reach up into the ticks); short ticks hang just under the bar
+    const fontPx = Math.round(Math.min(10 * dpr, (h - this.barH) * 0.62));
+    c.font = `500 ${fontPx}px 'IBM Plex Mono', ui-monospace, monospace`;
+    c.textBaseline = 'alphabetic';
     for (let k = 0; k <= this.max; k += labelEvery) {
       const x = this.pad + k * this.per * (this.segW + this.gap) - this.gap / 2;
+      const edge = k === 0 || k === this.max;
       c.fillStyle = k >= this.red ? this.col.hot : this.col.muted;
       c.textAlign = k === 0 ? 'left' : k === this.max ? 'right' : 'center';
-      c.fillText(String(k), Math.min(w - this.pad, Math.max(this.pad, x)), h);
-      c.fillRect(Math.min(w - dpr, Math.max(0, x - dpr / 2)), this.barH + 2 * dpr, dpr, 4 * dpr);
+      c.fillText(String(k), Math.min(w - this.pad, Math.max(this.pad, x)), h - dpr);
+      if (!edge) c.fillRect(Math.round(x - dpr / 2), this.barH + dpr, dpr, 3 * dpr);
     }
   }
 
